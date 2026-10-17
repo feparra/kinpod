@@ -1,0 +1,51 @@
+{
+  "kins": [
+    {
+      "id": "astro",
+      "name": "GEMINI",
+      "col": 0,
+      "row": 0,
+      "accent": "0xFF6B00"
+    },
+    {
+      "id": "octopus",
+      "name": "OCTO",
+      "col": 1,
+      "row": 0,
+      "accent": "0xFF7A2F"
+    },
+    {
+      "id": "crab",
+      "name": "OPENCLAW",
+      "col": 2,
+      "row": 0,
+      "accent": "0xEF4444"
+    },
+    {
+      "id": "hermes",
+      "name": "HERMES",
+      "col": 0,
+      "row": 1,
+      "accent": "0x38BDF8"
+    },
+    {
+      "id": "muse",
+      "name": "MUSE",
+      "col": 1,
+      "row": 1,
+      "accent": "0xFBBF24"
+    },
+    {
+      "id": "dots",
+      "name": "DOTS",
+      "col": 2,
+      "row": 1,
+      "accent": "0x3B82F6"
+    }
+  ],
+  "display": {
+    "width": 410,
+    "height": 502,
+    "driver": "CO5300"
+  }
+}

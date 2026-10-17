@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv/
+venv/
+ENV/
+
+# ESP-IDF & CMake build
+build/
+sdkconfig
+managed_components/
+dependencies.lock
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+.idea/
+.vscode/
+
+# Scratch & Temporary
+scratch_*.py
+temp_*.json
+*.log
