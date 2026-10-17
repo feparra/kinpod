@@ -1,0 +1,73 @@
+#include <stdio.h>
+#include "esp_log.h"
+#include "esp_system.h"
+#include "esp_chip_info.h"
+#include "esp_flash.h"
+#include "esp_psram.h"
+#include "nvs_flash.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+#include "kin_i2c_mgr.h"
+#include "kin_power.h"
+
+static const char *TAG = "KinPod-Main";
+
+static void power_monitor_task(void *pvParameters) {
+    kin_power_telemetry_t telem = {0};
+    while (1) {
+        if (kin_power_get_telemetry(&telem) == ESP_OK) {
+            ESP_LOGI(TAG, "Telemetry: VBat=%u mV | SOC=%u%% | Charging=%s",
+                     telem.vbat_mv, telem.battery_pct, telem.is_charging ? "YES" : "NO");
+        }
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+}
+
+void app_main(void) {
+    ESP_LOGI(TAG, "=================================================");
+    ESP_LOGI(TAG, "  KinPod (KinOS) v6.0 Firmware — Initializing    ");
+    ESP_LOGI(TAG, "  Hardware: Waveshare ESP32-S3 Touch AMOLED 2.06 ");
+    ESP_LOGI(TAG, "=================================================");
+
+    // 1. Initialize NVS (Non-Volatile Storage)
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+
+    // 2. Chip & Memory Audit
+    esp_chip_info_t chip_info;
+    esp_chip_info(&chip_info);
+    uint32_t flash_size = 0;
+    esp_flash_get_size(NULL, &flash_size);
+    size_t psram_size = esp_psram_get_size();
+
+    ESP_LOGI(TAG, "ESP32-S3 Cores: %d | Revision: %d", chip_info.cores, chip_info.revision);
+    ESP_LOGI(TAG, "Flash Memory Size: %lu MB (Quad SPI)", flash_size / (1024 * 1024));
+    ESP_LOGI(TAG, "Octal PSRAM Size:  %zu MB (High-Speed DMA)", psram_size / (1024 * 1024));
+
+    // 3. Initialize Shared I2C0 Bus and Power Subsystem (PMU AXP2101)
+    ESP_LOGI(TAG, "Initializing PMU AXP2101 & ALDO2 (3.3V Power Rail for AMOLED)...");
+    ret = kin_power_init();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "CRITICAL: Power subsystem failed to initialize: %s", esp_err_to_name(ret));
+    } else {
+        ESP_LOGI(TAG, "PMU AXP2101 OK: AMOLED Display Power Rail ALDO2 is 3.3V ACTIVE");
+    }
+
+    // 4. Start Telemetry Monitor Task
+    xTaskCreatePinnedToCore(
+        power_monitor_task,
+        "power_monitor",
+        3072,
+        NULL,
+        5,
+        NULL,
+        1
+    );
+
+    ESP_LOGI(TAG, "Phase 2 Scaffolding & Power Subsystem Ready for Phase 3 (Display QSPI & Touch)");
+}
