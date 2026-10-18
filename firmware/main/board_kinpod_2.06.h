@@ -31,6 +31,11 @@ extern "C" {
 esp_err_t kin_display_init(void);
 
 /**
+ * @brief Streams an arbitrary 410x502 RGB565 frame to the AMOLED display via DMA.
+ */
+esp_err_t kin_display_draw_raw_frame(const uint8_t *raw_frame);
+
+/**
  * @brief Renders the official true-black KinPod boot splash logo on the AMOLED panel.
  */
 esp_err_t kin_display_draw_splash(void);
@@ -44,6 +49,17 @@ esp_err_t kin_display_set_brightness(uint8_t pct);
  * @brief Clears the entire AMOLED screen to pure black (0x0000).
  */
 esp_err_t kin_display_clear(void);
+
+/**
+ * @brief Initializes the capacitive touch controller (CST9220 / FT5x06) via BSP.
+ */
+esp_err_t kin_touch_init(void);
+
+/**
+ * @brief Reads current touch coordinate if screen is being touched.
+ * @return true if touched, false otherwise.
+ */
+bool kin_touch_get_point(uint16_t *x, uint16_t *y);
 
 #ifdef __cplusplus
 }

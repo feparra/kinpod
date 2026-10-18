@@ -3,7 +3,9 @@
 #include "esp_heap_caps.h"
 #include "bsp/esp32_s3_touch_amoled_2_06.h"
 #include "bsp/display.h"
+#include "bsp/touch.h"
 #include "esp_lcd_panel_io.h"
+#include "esp_lcd_touch.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include <string.h>
@@ -13,6 +15,7 @@ static const char *TAG = "KinDisplay";
 
 static esp_lcd_panel_handle_t s_panel_handle = NULL;
 static esp_lcd_panel_io_handle_t s_io_handle = NULL;
+static esp_lcd_touch_handle_t s_touch_handle = NULL;
 static SemaphoreHandle_t s_trans_done_sem = NULL;
 
 // Raw splash asset embedded by CMake
@@ -93,12 +96,10 @@ esp_err_t kin_display_clear(void) {
     return ESP_OK;
 }
 
-esp_err_t kin_display_draw_splash(void) {
-    if (s_panel_handle == NULL) {
-        return ESP_ERR_INVALID_STATE;
+esp_err_t kin_display_draw_raw_frame(const uint8_t *raw_frame) {
+    if (s_panel_handle == NULL || raw_frame == NULL) {
+        return ESP_ERR_INVALID_ARG;
     }
-
-    ESP_LOGI(TAG, "Streaming Official Anti-Aliased KinPod Splash (Embedded Asset, 410x502)...");
 
     const int chunk_lines = 50;
     const size_t line_bytes = KIN_LCD_H_RES * sizeof(uint16_t);
@@ -110,7 +111,7 @@ esp_err_t kin_display_draw_splash(void) {
         dma_buf = (uint8_t *)malloc(chunk_bytes);
     }
     if (!dma_buf) {
-        ESP_LOGE(TAG, "Failed to allocate DMA buffer for splash transfer");
+        ESP_LOGE(TAG, "Failed to allocate DMA buffer for frame transfer");
         return ESP_ERR_NO_MEM;
     }
 
@@ -119,7 +120,7 @@ esp_err_t kin_display_draw_splash(void) {
         size_t current_chunk_size = h * line_bytes;
 
         // Copy chunk from embedded flash image into DMA RAM
-        memcpy(dma_buf, boot_splash_start + (y * line_bytes), current_chunk_size);
+        memcpy(dma_buf, raw_frame + (y * line_bytes), current_chunk_size);
 
         // Send to AMOLED via QSPI
         esp_lcd_panel_draw_bitmap(s_panel_handle, 0, y, KIN_LCD_H_RES, y + h, dma_buf);
@@ -131,6 +132,87 @@ esp_err_t kin_display_draw_splash(void) {
     }
 
     free(dma_buf);
-    ESP_LOGI(TAG, "Official KinPod Boot Splash Streamed Successfully to AMOLED Display!");
     return ESP_OK;
+}
+
+esp_err_t kin_display_draw_splash(void) {
+    ESP_LOGI(TAG, "Streaming Official KinPod Boot Splash...");
+    esp_err_t ret = kin_display_draw_raw_frame(boot_splash_start);
+    if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "Boot Splash Streamed Successfully!");
+    }
+    return ret;
+}
+
+#include "esp_lcd_touch_ft5x06.h"
+
+esp_err_t kin_touch_init(void) {
+    if (s_touch_handle != NULL) {
+        return ESP_OK;
+    }
+
+    ESP_LOGI(TAG, "Initializing Touchscreen CST9220 / FT5x06 (Address 0x38)...");
+
+    i2c_master_bus_handle_t i2c_bus = bsp_i2c_get_handle();
+    if (!i2c_bus) {
+        ESP_LOGE(TAG, "I2C master bus handle is NULL");
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    const esp_lcd_touch_config_t tp_cfg = {
+        .x_max = KIN_LCD_H_RES,
+        .y_max = KIN_LCD_V_RES,
+        .rst_gpio_num = GPIO_NUM_NC, // Do not drive reset pin of already-active chip
+        .int_gpio_num = GPIO_NUM_38,
+        .levels = {
+            .reset = 0,
+            .interrupt = 0,
+        },
+        .flags = {
+            .swap_xy = 0,
+            .mirror_x = 0,
+            .mirror_y = 0,
+        },
+    };
+
+    esp_lcd_panel_io_handle_t tp_io_handle = NULL;
+    esp_lcd_panel_io_i2c_config_t tp_io_config = ESP_LCD_TOUCH_IO_I2C_FT5x06_CONFIG();
+    tp_io_config.scl_speed_hz = 100000;
+
+    esp_err_t ret = esp_lcd_new_panel_io_i2c(i2c_bus, &tp_io_config, &tp_io_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "esp_lcd_new_panel_io_i2c failed: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    ret = esp_lcd_touch_new_i2c_ft5x06(tp_io_handle, &tp_cfg, &s_touch_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "esp_lcd_touch_new_i2c_ft5x06 failed: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    ESP_LOGI(TAG, "Touchscreen Online: CST9220 / FT5x06 Active on I2C0 [OK]");
+    return ESP_OK;
+}
+
+bool kin_touch_get_point(uint16_t *x, uint16_t *y) {
+    if (s_touch_handle == NULL) {
+        return false;
+    }
+
+    esp_err_t ret = esp_lcd_touch_read_data(s_touch_handle);
+    if (ret != ESP_OK) {
+        return false;
+    }
+
+    esp_lcd_touch_point_data_t pt;
+    uint8_t count = 0;
+    ret = esp_lcd_touch_get_data(s_touch_handle, &pt, &count, 1);
+    if (ret == ESP_OK && count > 0) {
+        if (x) *x = pt.x;
+        if (y) *y = pt.y;
+        return true;
+    }
+
+    return false;
 }
