@@ -21,6 +21,9 @@ esp_err_t kin_power_init(void) {
     ESP_LOGI(TAG, "AXP2101 PMU detected successfully (Chip ID: 0x%02X)", chip_id);
 
     // 2. Configure Output Voltages
+    // ALDO1 (3.3V): 500mV + (0x1C * 100mV) = 3300mV = 3.3V
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_ALDO1_VOLT, 0x1C);
+
     // ALDO2 (AMOLED 3.3V): 500mV + (0x1C * 100mV) = 3300mV = 3.3V
     ret = kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_ALDO2_VOLT, 0x1C);
     if (ret != ESP_OK) {
@@ -28,18 +31,23 @@ esp_err_t kin_power_init(void) {
         return ret;
     }
 
-    // ALDO1 (3.3V) & ALDO3 (3.3V)
-    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_ALDO1_VOLT, 0x1C);
+    // ALDO3 (Touch Panel 3.3V): 500mV + (0x1C * 100mV) = 3300mV = 3.3V
     kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_ALDO3_VOLT, 0x1C);
-    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_BLDO1_VOLT, 0x1C);
 
-    // 3. Enable ALDO2 (Bit 1) and other required LDO rails in register 0x90
+    // ALDO4 (1.8V logic): 500mV + (0x0D * 100mV) = 1800mV = 1.8V
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_ALDO4_VOLT, 0x0D);
+
+    // BLDO1 (3.3V) & BLDO2 (2.8V)
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_BLDO1_VOLT, 0x1C);
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_BLDO2_VOLT, 0x17);
+
+    // 3. Enable ALDO1, ALDO2 (AMOLED), ALDO3 (Touch), BLDO1 in register 0x90
     ret = kin_power_set_aldo2(true);
     if (ret != ESP_OK) {
         return ret;
     }
 
-    ESP_LOGI(TAG, "KinPod Power Subsystem online: ALDO2 @ 3.3V active for AMOLED display");
+    ESP_LOGI(TAG, "KinPod Power Subsystem online: ALDO2 (AMOLED 3.3V) & ALDO3 (Touch 3.3V) active");
     return ESP_OK;
 }
 
@@ -52,10 +60,11 @@ esp_err_t kin_power_set_aldo2(bool enable) {
     }
 
     if (enable) {
-        ldo_ctrl |= (1 << 1); // Enable ALDO2
-        ldo_ctrl |= (1 << 0); // Enable ALDO1
-        ldo_ctrl |= (1 << 2); // Enable ALDO3
-        ldo_ctrl |= (1 << 4); // Enable BLDO1
+        ldo_ctrl |= (1 << 0); // Enable ALDO1 (3.3V)
+        ldo_ctrl |= (1 << 1); // Enable ALDO2 (AMOLED 3.3V)
+        ldo_ctrl |= (1 << 2); // Enable ALDO3 (Touch Panel 3.3V)
+        ldo_ctrl |= (1 << 3); // Enable ALDO4 (1.8V)
+        ldo_ctrl |= (1 << 4); // Enable BLDO1 (3.3V)
     } else {
         ldo_ctrl &= ~(1 << 1); // Disable ALDO2
     }
@@ -66,7 +75,7 @@ esp_err_t kin_power_set_aldo2(bool enable) {
         return ret;
     }
 
-    ESP_LOGI(TAG, "ALDO2 (AMOLED 3.3V) state set to: %s (LDO_REG=0x%02X)", enable ? "ON" : "OFF", ldo_ctrl);
+    ESP_LOGI(TAG, "AXP2101 LDO Rails: ALDO1, ALDO2, ALDO3 enabled (LDO_REG=0x%02X)", ldo_ctrl);
     return ESP_OK;
 }
 

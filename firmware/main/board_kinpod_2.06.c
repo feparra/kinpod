@@ -151,7 +151,7 @@ esp_err_t kin_touch_init(void) {
         return ESP_OK;
     }
 
-    ESP_LOGI(TAG, "Initializing Touchscreen CST9220 / FT5x06 (Address 0x38)...");
+    ESP_LOGI(TAG, "Initializing Touchscreen FT3168 (Address 0x38)...");
 
     i2c_master_bus_handle_t i2c_bus = bsp_i2c_get_handle();
     if (!i2c_bus) {
@@ -159,10 +159,18 @@ esp_err_t kin_touch_init(void) {
         return ESP_ERR_INVALID_STATE;
     }
 
+    // Verify touch controller acknowledges address 0x38
+    esp_err_t probe_ret = i2c_master_probe(i2c_bus, 0x38, 100);
+    if (probe_ret != ESP_OK) {
+        ESP_LOGW(TAG, "Touch address 0x38 probe: %s", esp_err_to_name(probe_ret));
+    } else {
+        ESP_LOGI(TAG, "FT3168 acknowledged at I2C address 0x38 [OK]");
+    }
+
     const esp_lcd_touch_config_t tp_cfg = {
         .x_max = KIN_LCD_H_RES,
         .y_max = KIN_LCD_V_RES,
-        .rst_gpio_num = GPIO_NUM_NC, // Do not drive reset pin of already-active chip
+        .rst_gpio_num = GPIO_NUM_NC, // Handled above with proper 200ms delay
         .int_gpio_num = GPIO_NUM_38,
         .levels = {
             .reset = 0,
@@ -191,7 +199,7 @@ esp_err_t kin_touch_init(void) {
         return ret;
     }
 
-    ESP_LOGI(TAG, "Touchscreen Online: CST9220 / FT5x06 Active on I2C0 [OK]");
+    ESP_LOGI(TAG, "Touchscreen Online: FT3168 Active on I2C0 [OK]");
     return ESP_OK;
 }
 

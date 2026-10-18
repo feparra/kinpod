@@ -64,33 +64,33 @@ for idx, r in enumerate(ROSTER):
     accent = r['accent']
     char_id = r['id']
 
-    # 1. Top Bar: Battery & Status
-    # Battery icon outline
-    bat_x, bat_y = W - 55, 18
-    draw.rounded_rectangle([bat_x, bat_y, bat_x + 36, bat_y + 16], radius=3, outline=(160, 160, 160), width=2)
-    draw.rectangle([bat_x + 36, bat_y + 4, bat_x + 38, bat_y + 12], fill=(160, 160, 160)) # terminal
-    draw.rounded_rectangle([bat_x + 3, bat_y + 3, bat_x + 28, bat_y + 13], radius=2, fill=(40, 200, 60)) # 80% level
-
-    # Status pill: 'ONLINE' with glowing dot
+    # 1. Top Bar: Battery & Status (Positioned inside Safe Area away from rounded corners)
+    # Status pill: 'ONLINE' with glowing dot (x=38, y=26)
     pill_w = 88
     pill_h = 24
-    pill_x = 20
-    pill_y = 14
-    draw.rounded_rectangle([pill_x, pill_y, pill_x + pill_w, pill_y + pill_h], radius=12, fill=(20, 20, 20), outline=accent, width=1)
+    pill_x = 38
+    pill_y = 26
+    draw.rounded_rectangle([pill_x, pill_y, pill_x + pill_w, pill_y + pill_h], radius=12, fill=(18, 18, 20), outline=accent, width=1)
     draw.ellipse([pill_x + 8, pill_y + 7, pill_x + 18, pill_y + 17], fill=accent)
     draw.text((pill_x + 24, pill_y + 4), 'ONLINE', fill=(240, 240, 240), font=font_status)
 
+    # Battery icon outline & charge indicator (x=W-82, y=28)
+    bat_x, bat_y = W - 82, 28
+    draw.rounded_rectangle([bat_x, bat_y, bat_x + 36, bat_y + 18], radius=4, outline=(180, 180, 180), width=2)
+    draw.rectangle([bat_x + 36, bat_y + 5, bat_x + 39, bat_y + 13], fill=(180, 180, 180)) # battery terminal tip
+    draw.rounded_rectangle([bat_x + 3, bat_y + 3, bat_x + 27, bat_y + 15], radius=2, fill=(40, 220, 70)) # 85% charge level
+
     # 2. Character Name & Subtitle
     name_w = draw.textlength(r['name'], font=font_title)
-    draw.text(((W - name_w) / 2, 56), r['name'], fill=(255, 255, 255), font=font_title)
+    draw.text(((W - name_w) / 2, 64), r['name'], fill=(255, 255, 255), font=font_title)
 
     sub_w = draw.textlength(r['sub'], font=font_sub)
-    draw.text(((W - sub_w) / 2, 88), r['sub'], fill=accent, font=font_sub)
+    draw.text(((W - sub_w) / 2, 94), r['sub'], fill=accent, font=font_sub)
 
     # 3. Squircle Card Container
     card_size = 246
     card_x = (W - card_size) // 2
-    card_y = 114
+    card_y = 120
     # Outer subtle accent glow
     draw.rounded_rectangle([card_x - 3, card_y - 3, card_x + card_size + 3, card_y + card_size + 3], radius=36, outline=accent, width=2)
     # Inner dark fill
@@ -109,7 +109,7 @@ for idx, r in enumerate(ROSTER):
     dot_spacing = 22
     total_dots_w = 5 * dot_spacing
     start_dot_x = (W - total_dots_w) // 2
-    dots_y = 390
+    dots_y = 398
 
     for d in range(6):
         dx = start_dot_x + d * dot_spacing
@@ -121,7 +121,7 @@ for idx, r in enumerate(ROSTER):
     # Swipe text with arrows
     hint = '◄   SWIPE TO SWITCH   ►'
     hint_w = draw.textlength(hint, font=font_arrow)
-    draw.text(((W - hint_w) / 2, 424), hint, fill=(120, 120, 120), font=font_arrow)
+    draw.text(((W - hint_w) / 2, 432), hint, fill=(120, 120, 120), font=font_arrow)
 
     # Save PNG mockup
     png_out = os.path.join('firmware', 'main', 'assets', f'avatar_{char_id}.png')
@@ -140,6 +140,10 @@ for idx, r in enumerate(ROSTER):
     with open(raw_out, 'wb') as f:
         f.write(raw)
 
-    print(f'Generated {char_id:8s} -> {raw_out} ({len(raw)} bytes)')
+    raw_main = os.path.join('firmware', 'main', f'avatar_{char_id}.raw')
+    with open(raw_main, 'wb') as f:
+        f.write(raw)
+
+    print(f'Generated {char_id:8s} -> {raw_out} and {raw_main} ({len(raw)} bytes)')
 
 print('All 6 avatar screens generated successfully!')
