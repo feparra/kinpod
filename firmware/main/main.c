@@ -13,21 +13,10 @@
 #include "kin_power.h"
 #include "board_kinpod_2.06.h"
 #include "kin_avatar.h"
+#include "kin_audio.h"
 
 static const char *TAG = "KinPod-Main";
 
-static void scan_i2c_bus(void) {
-    ESP_LOGI(TAG, "Scanning shared I2C0 bus (SCL=GPIO14, SDA=GPIO15)...");
-    int count = 0;
-    for (uint8_t addr = 1; addr < 127; addr++) {
-        uint8_t dummy = 0;
-        if (kin_i2c_read_reg(addr, 0x00, &dummy) == ESP_OK) {
-            ESP_LOGI(TAG, "  -> Found I2C device at address: 0x%02X", addr);
-            count++;
-        }
-    }
-    ESP_LOGI(TAG, "I2C scan complete: %d device(s) detected.", count);
-}
 
 static void power_monitor_task(void *pvParameters) {
     kin_power_telemetry_t telem = {0};
@@ -132,8 +121,6 @@ void app_main(void) {
         ESP_LOGI(TAG, "PMU AXP2101 OK: AMOLED Display Power Rail ALDO2 is 3.3V ACTIVE");
     }
 
-    // 4. I2C Peripheral Audit (Scan Touch & Codec addresses)
-    scan_i2c_bus();
 
     // 5. Initialize AMOLED Display (CO5300 QSPI: SCLK=11, CS=12, D0-D3=4-7, RST=8)
     ret = kin_display_init();
@@ -154,7 +141,18 @@ void app_main(void) {
     // 7. Initialize Kin Avatar Subsystem
     kin_avatar_init();
 
-    // 8. Hold boot splash briefly (2.5s) then transition into active Kin avatar
+    // 8. Initialize Kin Audio Subsystem (ES7210 Mic + ES8311 Speaker + NS4150 Amp)
+    ret = kin_audio_init();
+    if (ret == ESP_OK) {
+        // Play acoustic boot chime through the chest speaker!
+        kin_audio_play_chime();
+        // Start Push-To-Talk monitor task on BOOT button (GPIO 0)
+        kin_audio_start_ptt_task(NULL);
+    } else {
+        ESP_LOGE(TAG, "Audio subsystem initialization failed: %s", esp_err_to_name(ret));
+    }
+
+    // 9. Hold boot splash briefly (2.5s) then transition into active Kin avatar
     vTaskDelay(pdMS_TO_TICKS(2500));
     kin_avatar_set_active(KIN_AVATAR_CRAB); // Default to OpenClaw Crab (#EF4444)
 
