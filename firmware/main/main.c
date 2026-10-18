@@ -10,8 +10,22 @@
 
 #include "kin_i2c_mgr.h"
 #include "kin_power.h"
+#include "board_kinpod_2.06.h"
 
 static const char *TAG = "KinPod-Main";
+
+static void scan_i2c_bus(void) {
+    ESP_LOGI(TAG, "Scanning shared I2C0 bus (SCL=GPIO14, SDA=GPIO15)...");
+    int count = 0;
+    for (uint8_t addr = 1; addr < 127; addr++) {
+        uint8_t dummy = 0;
+        if (kin_i2c_read_reg(addr, 0x00, &dummy) == ESP_OK) {
+            ESP_LOGI(TAG, "  -> Found I2C device at address: 0x%02X", addr);
+            count++;
+        }
+    }
+    ESP_LOGI(TAG, "I2C scan complete: %d device(s) detected.", count);
+}
 
 static void power_monitor_task(void *pvParameters) {
     kin_power_telemetry_t telem = {0};
@@ -26,7 +40,7 @@ static void power_monitor_task(void *pvParameters) {
 
 void app_main(void) {
     ESP_LOGI(TAG, "=================================================");
-    ESP_LOGI(TAG, "  KinPod (KinOS) v6.0 Firmware — Initializing    ");
+    ESP_LOGI(TAG, "  KinPod (KinOS) v6.0 Firmware — Phase 3 Display ");
     ESP_LOGI(TAG, "  Hardware: Waveshare ESP32-S3 Touch AMOLED 2.06 ");
     ESP_LOGI(TAG, "=================================================");
 
@@ -58,7 +72,19 @@ void app_main(void) {
         ESP_LOGI(TAG, "PMU AXP2101 OK: AMOLED Display Power Rail ALDO2 is 3.3V ACTIVE");
     }
 
-    // 4. Start Telemetry Monitor Task
+    // 4. I2C Peripheral Audit (Scan Touch & Codec addresses)
+    scan_i2c_bus();
+
+    // 5. Initialize AMOLED Display (CO5300 QSPI: SCLK=11, CS=12, D0-D3=4-7, RST=8)
+    ret = kin_display_init();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Display initialization failed: %s", esp_err_to_name(ret));
+    } else {
+        // 6. Draw Official KinPod Boot Splash on the AMOLED panel!
+        kin_display_draw_splash();
+    }
+
+    // 7. Start Telemetry Monitor Task
     xTaskCreatePinnedToCore(
         power_monitor_task,
         "power_monitor",
@@ -69,5 +95,5 @@ void app_main(void) {
         1
     );
 
-    ESP_LOGI(TAG, "Phase 2 Scaffolding & Power Subsystem Ready for Phase 3 (Display QSPI & Touch)");
+    ESP_LOGI(TAG, "KinPod Phase 3 Initialized: Boot Splash Rendered on Physical AMOLED Screen!");
 }
