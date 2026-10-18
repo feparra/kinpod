@@ -3,6 +3,9 @@
 #include "esp_heap_caps.h"
 #include "bsp/esp32_s3_touch_amoled_2_06.h"
 #include "bsp/display.h"
+#include "esp_lcd_panel_io.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -10,10 +13,19 @@ static const char *TAG = "KinDisplay";
 
 static esp_lcd_panel_handle_t s_panel_handle = NULL;
 static esp_lcd_panel_io_handle_t s_io_handle = NULL;
+static SemaphoreHandle_t s_trans_done_sem = NULL;
 
 // Raw splash asset embedded by CMake
 extern const uint8_t boot_splash_start[] asm("_binary_boot_splash_raw_start");
 extern const uint8_t boot_splash_end[]   asm("_binary_boot_splash_raw_end");
+
+static bool s_on_color_trans_done(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx) {
+    BaseType_t need_yield = pdFALSE;
+    if (s_trans_done_sem) {
+        xSemaphoreGiveFromISR(s_trans_done_sem, &need_yield);
+    }
+    return need_yield == pdTRUE;
+}
 
 esp_err_t kin_display_init(void) {
     ESP_LOGI(TAG, "Initializing Waveshare 2.06\" AMOLED Panel via official BSP...");
@@ -27,6 +39,17 @@ esp_err_t kin_display_init(void) {
         ESP_LOGE(TAG, "bsp_display_new failed: %s", esp_err_to_name(ret));
         return ret;
     }
+
+    // Create binary semaphore for DMA transfer synchronization
+    if (s_trans_done_sem == NULL) {
+        s_trans_done_sem = xSemaphoreCreateBinary();
+    }
+
+    // Register callback for DMA completion
+    const esp_lcd_panel_io_callbacks_t cbs = {
+        .on_color_trans_done = s_on_color_trans_done,
+    };
+    esp_lcd_panel_io_register_event_callbacks(s_io_handle, &cbs, NULL);
 
     // Set 100% Brightness
     bsp_display_brightness_set(100);
@@ -61,6 +84,9 @@ esp_err_t kin_display_clear(void) {
     for (int y = 0; y < KIN_LCD_V_RES; y += chunk_height) {
         int h = (y + chunk_height <= KIN_LCD_V_RES) ? chunk_height : (KIN_LCD_V_RES - y);
         esp_lcd_panel_draw_bitmap(s_panel_handle, 0, y, KIN_LCD_H_RES, y + h, line_buf);
+        if (s_trans_done_sem) {
+            xSemaphoreTake(s_trans_done_sem, pdMS_TO_TICKS(100));
+        }
     }
 
     free(line_buf);
@@ -97,6 +123,11 @@ esp_err_t kin_display_draw_splash(void) {
 
         // Send to AMOLED via QSPI
         esp_lcd_panel_draw_bitmap(s_panel_handle, 0, y, KIN_LCD_H_RES, y + h, dma_buf);
+
+        // Synchronize: wait until hardware DMA completes before copying next chunk or freeing
+        if (s_trans_done_sem) {
+            xSemaphoreTake(s_trans_done_sem, pdMS_TO_TICKS(100));
+        }
     }
 
     free(dma_buf);
