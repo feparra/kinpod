@@ -80,7 +80,8 @@ void app_main(void) {
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Display initialization failed: %s", esp_err_to_name(ret));
     } else {
-        // 6. Draw Official KinPod Boot Splash on the AMOLED panel!
+        // 6. Clear display & draw official KinPod Boot Splash on the AMOLED panel!
+        kin_display_clear();
         kin_display_draw_splash();
     }
 
