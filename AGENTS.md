@@ -41,6 +41,9 @@ When the user asks you to connect to KinPod:
 | MCP Tool | Description |
 | :--- | :--- |
 | `kinpod_status()` | Returns battery voltage, Wi-Fi RSSI, connection state, and active avatar. |
+| `kinpod_generate_pairing_code(relay_url)` | **4-Digit Pairing (Zero App, Zero Cable):** Spawns roaming tunnel, registers with Cloud Relay, and gives user a 4-digit PIN (e.g. `4821`) to tap on their KinPod chest screen. |
+| `kinpod_expose_tunnel(port)` | **Zero-Config Roaming:** Spawns a public Cloudflare tunnel (`wss://...`) so KinPod can roam outdoors on cellular hotspot. |
+| `kinpod_configure_wearable(ws_url, wifi_ssid, wifi_pass, port)` | **Zero-Friction Hardware Config:** Directly configures wearable over USB serial with the Cloudflare tunnel and Wi-Fi credentials. |
 | `kinpod_inhabit(agent_id, avatar_id, title)` | Changes the character on the chest screen. |
 | `kinpod_speak(text, voice)` | Streams synthesized speech through the hardware chest speaker. |
 | `kinpod_request_approval(action, details, risk)` | **Human-In-The-Loop:** Pops up tactile Approve/Reject modal on screen. Pauses execution until wearer taps screen. |

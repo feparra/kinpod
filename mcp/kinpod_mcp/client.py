@@ -77,3 +77,14 @@ class KinPodClient:
             if resp.status_code == 200:
                 return resp.json()
             return {"action_id": action_id, "approved": False, "reason": resp.text}
+
+    async def get_tunnel(self) -> Dict[str, Any]:
+        """Fetch or start Cloudflare public tunnel for remote outdoor roaming."""
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            try:
+                resp = await client.get(f"{self.base_url}/api/tunnel")
+                if resp.status_code == 200:
+                    return resp.json()
+                return {"status": "error", "message": f"HTTP {resp.status_code}"}
+            except Exception as e:
+                return {"status": "error", "message": str(e)}

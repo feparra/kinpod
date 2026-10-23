@@ -188,6 +188,71 @@ async def request_human_approval(req: ApprovalRequest):
         pending_approvals.pop(req.action_id, None)
         return {"action_id": req.action_id, "approved": False, "reason": "timeout"}
 
+s_tunnel_url: Optional[str] = None
+s_tunnel_proc = None
+
+def start_cloudflare_tunnel(port: int = 8000) -> Dict[str, Any]:
+    global s_tunnel_url, s_tunnel_proc
+    if s_tunnel_url:
+        return {"status": "active", "url": s_tunnel_url, "http_url": s_tunnel_proc.tunnel if s_tunnel_proc else None}
+    try:
+        import pycloudflared
+        s_tunnel_proc = pycloudflared.try_cloudflare(port=port)
+        s_tunnel_url = s_tunnel_proc.tunnel.replace("https://", "wss://") + "/ws/kinpod"
+        logger.info(f"🚀 Cloudflare Public Tunnel Active! KinPod Roaming URL: {s_tunnel_url}")
+        return {"status": "active", "url": s_tunnel_url, "http_url": s_tunnel_proc.tunnel}
+    except Exception as e:
+        logger.error(f"Tunnel creation failed: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.on_event("startup")
+async def on_startup():
+    logger.info("KinBridge Hub initializing...")
+    if os.getenv("KIN_AUTO_TUNNEL", "1") == "1":
+        asyncio.get_event_loop().run_in_executor(None, start_cloudflare_tunnel, 8000)
+
+@app.get("/api/tunnel")
+def get_or_start_tunnel(port: int = 8000):
+    """Starts or returns the active Cloudflare public tunnel for roaming outdoors."""
+    return start_cloudflare_tunnel(port=port)
+
+# -----------------------------------------------------------------------------
+# PAIRING & RENDEZVOUS API (For 4-Digit PIN Wearable Linking)
+# -----------------------------------------------------------------------------
+s_active_pairs: Dict[str, Dict[str, Any]] = {}
+
+class PairRequest(BaseModel):
+    url: str
+    ttl_sec: Optional[int] = 600
+
+@app.post("/api/pair")
+def register_pair(req: PairRequest):
+    """Registers an agent's roaming WebSocket tunnel and assigns a 4-digit PIN."""
+    import time, random
+    now = time.time()
+    for p in list(s_active_pairs.keys()):
+        if s_active_pairs[p]["expires_at"] < now:
+            del s_active_pairs[p]
+    ttl = req.ttl_sec or 600
+    for _ in range(100):
+        pin = f"{random.randint(1000, 9999)}"
+        if pin not in s_active_pairs:
+            s_active_pairs[pin] = {"url": req.url, "expires_at": now + ttl}
+            logger.info(f"Registered Pairing PIN {pin} -> {req.url}")
+            return {"status": "ok", "pin": pin, "url": req.url, "expires_in": ttl}
+    raise HTTPException(status_code=503, detail="Pairing pool full")
+
+@app.get("/api/pair/{pin}")
+def resolve_pair(pin: str):
+    """Resolves a 4-digit PIN to its roaming WebSocket tunnel URL."""
+    import time
+    now = time.time()
+    item = s_active_pairs.get(pin)
+    if not item or item["expires_at"] < now:
+        raise HTTPException(status_code=404, detail="PIN not found or expired")
+    return {"status": "ok", "pin": pin, "url": item["url"]}
+
+
 # -----------------------------------------------------------------------------
 # WEBSOCKET ENDPOINT (ESP32-S3 Hardware / Simulator)
 # -----------------------------------------------------------------------------
@@ -196,6 +261,11 @@ async def kinpod_ws(ws: WebSocket):
     """Main bidirectional streaming WebSocket connection with KinPod hardware."""
     global active_kinpod_ws
     await ws.accept()
+    if active_kinpod_ws and active_kinpod_ws != ws:
+        try:
+            await active_kinpod_ws.close()
+        except Exception:
+            pass
     active_kinpod_ws = ws
     current_device_status["connected"] = True
     logger.info("KinPod ESP32-S3 device connected successfully.")
@@ -269,9 +339,12 @@ async def kinpod_ws(ws: WebSocket):
 
     except WebSocketDisconnect:
         logger.warning("KinPod ESP32-S3 disconnected.")
+    except Exception as e:
+        logger.warning(f"KinPod WebSocket exception: {e}")
     finally:
-        active_kinpod_ws = None
-        current_device_status["connected"] = False
+        if active_kinpod_ws == ws:
+            active_kinpod_ws = None
+            current_device_status["connected"] = False
 
 if __name__ == "__main__":
     import uvicorn
