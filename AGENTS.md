@@ -18,21 +18,28 @@
 
 ## 2. MCP Quickstart for Agents (e.g. OpenClaw)
 
-When the user asks you to connect to KinPod:
-1. Ensure the `kinpod` MCP server is configured in your `mcp_config.json`:
-   ```json
-   {
-     "mcpServers": {
-       "kinpod": {
-         "command": "python",
-         "args": ["-m", "kinpod_mcp.server"]
-       }
-     }
-   }
-   ```
-2. Verify hardware connectivity by calling `kinpod_status()`.
-3. Take possession of your physical avatar by calling `kinpod_inhabit(agent_id="openclaw", avatar_id="crab")`.
-4. The user's chest display will immediately transition to your Crab character with red accent (`#EF4444`).
+If you are an agent given this repository, execute:
+```bash
+git clone https://github.com/feparra/kinpod.git
+cd kinpod/mcp && pip install -e .
+```
+
+Then ensure the `kinpod` MCP server is configured in your `mcp_config.json`:
+```json
+{
+  "mcpServers": {
+    "kinpod": {
+      "command": "python",
+      "args": ["-m", "kinpod_mcp.server"]
+    }
+  }
+}
+```
+
+Once running:
+1. Verify hardware connectivity by calling `kinpod_status()`.
+2. Take possession of your physical avatar by calling `kinpod_inhabit(agent_id="openclaw", avatar_id="crab")`.
+3. The user's chest display will immediately transition to your Crab character with red accent (`#EF4444`).
 
 ---
 
