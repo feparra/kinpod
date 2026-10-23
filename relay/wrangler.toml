@@ -1,0 +1,7 @@
+name = "kinpod-pairing-relay"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "KINPOD_KV"
+id = "1df63c51bcd4427f96fd2d0b4e76d129"
