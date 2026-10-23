@@ -30,3 +30,14 @@ spiffs_assets.bin
 .wrangler/
 dist/
 *.egg-info/
+
+# Web / Landing
+landing/node_modules/
+landing/.next/
+landing/.vercel/
+node_modules/
+.next/
+
+# Local personal scripts / credentials
+scripts/flash_roaming_nvs.py
+scripts/set_roaming_url.py

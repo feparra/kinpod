@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+@theme {
+  --color-walnut-shadow: #100904;
+  --color-bark-brown: #382416;
+  --color-bark-light: #523722;
+  --color-cork-border: #40372e;
+  --color-cork-border-light: #574c41;
+  --color-driftwood: #6c5f51;
+  --color-driftwood-light: #9a8b79;
+  --color-warm-cream: #ffedd7;
+  --color-warm-cream-dim: #e4cbb0;
+  --color-ember-accent: #dc5000;
+  --color-ember-glow: rgba(220, 80, 0, 0.25);
+  --color-pure-black: #000000;
+
+  --kin-crab: #EF4444;
+  --kin-astro: #FF6B00;
+  --kin-octopus: #FF7A2F;
+  --kin-hermes: #38BDF8;
+  --kin-muse: #FBBF24;
+  --kin-dots: #3B82F6;
+
+  --font-display: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-mono), monospace;
+
+  --radius-cards: 12px;
+  --radius-buttons-outlined: 22.5px;
+  --radius-buttons-pill: 36px;
+  --radius-full-round: 9999px;
+}
+
+:root {
+  --background: #100904;
+  --foreground: #ffedd7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: #100904;
+  color: #ffedd7;
+}
+
+body {
+  background-color: #100904;
+  color: #ffedd7;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom darkroom aesthetics */
+.editorial-void {
+  background-color: #100904;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(220, 80, 0, 0.08) 0%, transparent 65%),
+    radial-gradient(circle at 10% 50%, rgba(56, 36, 22, 0.15) 0%, transparent 40%);
+}
+
+.hairline-border {
+  border: 1px solid #40372e;
+}
+
+.hairline-border-light {
+  border: 1px solid #574c41;
+}
+
+.elevated-surface {
+  background-color: #1a120c;
+  border: 1px solid #40372e;
+}
+
+.elevated-card {
+  background-color: rgba(26, 18, 12, 0.85);
+  border: 1px solid #40372e;
+  backdrop-filter: blur(8px);
+}
+
+.glow-ember {
+  box-shadow: 0 0 45px -10px rgba(220, 80, 0, 0.25);
+}
+
+.glow-kin {
+  box-shadow: 0 0 50px -10px var(--current-kin-color, rgba(239, 68, 68, 0.3));
+}
+
+/* Museum Declarative Uppercase */
+.museum-heading {
+  font-family: var(--font-display);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+}
+
+/* Mix-case Narrative Voice */
+.narrative-body {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.45;
+  color: #ffedd7;
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #100904;
+}
+::-webkit-scrollbar-thumb {
+  background: #40372e;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #6c5f51;
+}
