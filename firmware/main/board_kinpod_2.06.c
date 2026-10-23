@@ -1,4 +1,5 @@
 #include "board_kinpod_2.06.h"
+#include "kin_i2c_mgr.h"
 #include "esp_log.h"
 #include "esp_heap_caps.h"
 #include "bsp/esp32_s3_touch_amoled_2_06.h"
@@ -116,8 +117,7 @@ esp_err_t kin_display_draw_sprite(int x, int y, int w, int h, const uint8_t *raw
         return ESP_ERR_INVALID_ARG;
     }
 
-    const size_t line_pixels = KIN_LCD_H_RES; // 410 pixels
-    const size_t chunk_bytes = line_pixels * SPRITE_CHUNK_LINES * sizeof(uint16_t);
+    const size_t chunk_bytes = w * SPRITE_CHUNK_LINES * sizeof(uint16_t);
 
     if (!s_sprite_dma_buf) {
         s_sprite_dma_buf = (uint8_t *)heap_caps_malloc(chunk_bytes, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
@@ -130,24 +130,17 @@ esp_err_t kin_display_draw_sprite(int x, int y, int w, int h, const uint8_t *raw
         }
     }
 
-    uint16_t *dma_pixels = (uint16_t *)s_sprite_dma_buf;
     const uint16_t *src_pixels = (const uint16_t *)raw_sprite;
 
     for (int cur_y = 0; cur_y < h; cur_y += SPRITE_CHUNK_LINES) {
         int lines = (cur_y + SPRITE_CHUNK_LINES <= h) ? SPRITE_CHUNK_LINES : (h - cur_y);
+        size_t transfer_bytes = w * lines * sizeof(uint16_t);
 
-        // Clear DMA chunk buffer to pure AMOLED black (410 * lines pixels)
-        memset(dma_pixels, 0x00, lines * line_pixels * sizeof(uint16_t));
+        // Copy contiguous sprite rows into DMA buffer
+        memcpy(s_sprite_dma_buf, &src_pixels[cur_y * w], transfer_bytes);
 
-        // Copy sprite rows into centered window [x .. x+w]
-        for (int row = 0; row < lines; row++) {
-            int src_row = cur_y + row;
-            int dst_offset = row * line_pixels + x;
-            memcpy(&dma_pixels[dst_offset], &src_pixels[src_row * w], w * sizeof(uint16_t));
-        }
-
-        // Send full scanlines (0 to 410) via proven hardware QSPI DMA
-        esp_lcd_panel_draw_bitmap(s_panel_handle, 0, y + cur_y, KIN_LCD_H_RES, y + cur_y + lines, dma_pixels);
+        // Draw ONLY the exact sprite window [x .. x+w, y+cur_y .. y+cur_y+lines]
+        esp_lcd_panel_draw_bitmap(s_panel_handle, x, y + cur_y, x + w, y + cur_y + lines, s_sprite_dma_buf);
 
         if (s_trans_done_sem) {
             xSemaphoreTake(s_trans_done_sem, pdMS_TO_TICKS(100));
@@ -297,14 +290,21 @@ bool kin_touch_get_point(uint16_t *x, uint16_t *y) {
         return false;
     }
 
+    if (!kin_i2c_lock(20)) {
+        return false;
+    }
+
     esp_err_t ret = esp_lcd_touch_read_data(s_touch_handle);
     if (ret != ESP_OK) {
+        kin_i2c_unlock();
         return false;
     }
 
     esp_lcd_touch_point_data_t pt;
     uint8_t count = 0;
     ret = esp_lcd_touch_get_data(s_touch_handle, &pt, &count, 1);
+    kin_i2c_unlock();
+
     if (ret == ESP_OK && count > 0) {
         if (x) *x = pt.x;
         if (y) *y = pt.y;

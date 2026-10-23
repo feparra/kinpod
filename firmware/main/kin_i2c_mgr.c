@@ -34,7 +34,7 @@ static i2c_master_dev_handle_t get_dev_handle(uint8_t dev_addr) {
 
 esp_err_t kin_i2c_init(void) {
     if (s_i2c_mutex == NULL) {
-        s_i2c_mutex = xSemaphoreCreateMutex();
+        s_i2c_mutex = xSemaphoreCreateRecursiveMutex();
     }
     esp_err_t ret = bsp_i2c_init();
     if (ret != ESP_OK) {
@@ -59,18 +59,18 @@ esp_err_t kin_i2c_read_bytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *buf, s
         return ESP_ERR_INVALID_ARG;
     }
 
-    if (s_i2c_mutex && xSemaphoreTake(s_i2c_mutex, pdMS_TO_TICKS(KIN_I2C_TIMEOUT_MS)) != pdTRUE) {
+    if (s_i2c_mutex && xSemaphoreTakeRecursive(s_i2c_mutex, pdMS_TO_TICKS(KIN_I2C_TIMEOUT_MS)) != pdTRUE) {
         return ESP_ERR_TIMEOUT;
     }
 
     i2c_master_dev_handle_t dev = get_dev_handle(dev_addr);
     if (!dev) {
-        if (s_i2c_mutex) xSemaphoreGive(s_i2c_mutex);
+        if (s_i2c_mutex) xSemaphoreGiveRecursive(s_i2c_mutex);
         return ESP_ERR_NOT_FOUND;
     }
 
     esp_err_t ret = i2c_master_transmit_receive(dev, &reg_addr, 1, buf, len, KIN_I2C_TIMEOUT_MS);
-    if (s_i2c_mutex) xSemaphoreGive(s_i2c_mutex);
+    if (s_i2c_mutex) xSemaphoreGiveRecursive(s_i2c_mutex);
     return ret;
 }
 
@@ -79,13 +79,13 @@ esp_err_t kin_i2c_write_bytes(uint8_t dev_addr, uint8_t reg_addr, const uint8_t 
         return ESP_ERR_INVALID_ARG;
     }
 
-    if (s_i2c_mutex && xSemaphoreTake(s_i2c_mutex, pdMS_TO_TICKS(KIN_I2C_TIMEOUT_MS)) != pdTRUE) {
+    if (s_i2c_mutex && xSemaphoreTakeRecursive(s_i2c_mutex, pdMS_TO_TICKS(KIN_I2C_TIMEOUT_MS)) != pdTRUE) {
         return ESP_ERR_TIMEOUT;
     }
 
     i2c_master_dev_handle_t dev = get_dev_handle(dev_addr);
     if (!dev) {
-        if (s_i2c_mutex) xSemaphoreGive(s_i2c_mutex);
+        if (s_i2c_mutex) xSemaphoreGiveRecursive(s_i2c_mutex);
         return ESP_ERR_NOT_FOUND;
     }
 
@@ -94,6 +94,15 @@ esp_err_t kin_i2c_write_bytes(uint8_t dev_addr, uint8_t reg_addr, const uint8_t 
     memcpy(&buffer[1], data, len);
 
     esp_err_t ret = i2c_master_transmit(dev, buffer, len + 1, KIN_I2C_TIMEOUT_MS);
-    if (s_i2c_mutex) xSemaphoreGive(s_i2c_mutex);
+    if (s_i2c_mutex) xSemaphoreGiveRecursive(s_i2c_mutex);
     return ret;
+}
+
+bool kin_i2c_lock(uint32_t timeout_ms) {
+    if (!s_i2c_mutex) return true;
+    return xSemaphoreTakeRecursive(s_i2c_mutex, pdMS_TO_TICKS(timeout_ms)) == pdTRUE;
+}
+
+void kin_i2c_unlock(void) {
+    if (s_i2c_mutex) xSemaphoreGiveRecursive(s_i2c_mutex);
 }

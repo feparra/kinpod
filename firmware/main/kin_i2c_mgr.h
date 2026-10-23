@@ -39,6 +39,16 @@ esp_err_t kin_i2c_read_bytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *buf, s
  */
 esp_err_t kin_i2c_write_bytes(uint8_t dev_addr, uint8_t reg_addr, const uint8_t *data, size_t len);
 
+/**
+ * @brief Acquire shared I2C bus mutex lock.
+ */
+bool kin_i2c_lock(uint32_t timeout_ms);
+
+/**
+ * @brief Release shared I2C bus mutex lock.
+ */
+void kin_i2c_unlock(void);
+
 #ifdef __cplusplus
 }
 #endif

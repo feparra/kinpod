@@ -47,11 +47,18 @@ esp_err_t kin_power_init(void) {
         return ret;
     }
 
-    // 4. Enable Power Button (PEK) Short/Long Press interrupts in AXP2101 INTEN2 (0x41)
+    // 4. Configure & Enable Lithium Battery Charger (500mA @ 4.2V termination, 2000mA VBUS input)
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_VBUS_CURR_LIMIT, 0x05); // VBUS Limit: 2000mA
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_CHG_VOLT, 0x01);        // 4.2V Termination Voltage
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_CHG_CURR, 0x0A);        // 500mA ICC Charge Current
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_CHG_ENABLE, 0x01);      // Enable internal charger
+    ESP_LOGI(TAG, "AXP2101 Battery Charger online: 500mA @ 4.2V [ACTIVE]");
+
+    // 5. Enable Power Button (PEK) Short/Long Press interrupts in AXP2101 INTEN2 (0x41)
     kin_i2c_write_reg(AXP2101_I2C_ADDR, 0x41, 0x03);
     kin_i2c_write_reg(AXP2101_I2C_ADDR, 0x49, 0xFF); // Clear pending
 
-    ESP_LOGI(TAG, "KinPod Power Subsystem online: ALDO2 (AMOLED 3.3V) & ALDO3 (Touch 3.3V) active, PEK button enabled");
+    ESP_LOGI(TAG, "KinPod Power Subsystem online: ALDO2 (AMOLED 3.3V), ALDO3 (Touch 3.3V), Charger 500mA [OK]");
     return ESP_OK;
 }
 
@@ -88,10 +95,18 @@ esp_err_t kin_power_get_telemetry(kin_power_telemetry_t *telem) {
         return ESP_ERR_INVALID_ARG;
     }
 
+    if (!kin_i2c_lock(100)) {
+        return ESP_ERR_TIMEOUT;
+    }
+
     uint8_t status = 0;
     kin_i2c_read_reg(AXP2101_I2C_ADDR, AXP2101_REG_POWER_STATUS, &status);
-    telem->is_charging = (status & (1 << 6)) != 0;
-    telem->is_battery_in = (status & (1 << 5)) != 0;
+    uint8_t chg_mode = (status >> 5) & 0x03; // 00: standby, 01: CC charge, 10: CV charge, 11: done
+    telem->is_charging = (chg_mode == 1 || chg_mode == 2);
+
+    uint8_t pwr_in = 0;
+    kin_i2c_read_reg(AXP2101_I2C_ADDR, 0x00, &pwr_in);
+    telem->is_battery_in = (pwr_in & (1 << 3)) != 0;
 
     uint8_t pct = 100;
     kin_i2c_read_reg(AXP2101_I2C_ADDR, AXP2101_REG_BAT_PERCENT, &pct);
@@ -103,6 +118,7 @@ esp_err_t kin_power_get_telemetry(kin_power_telemetry_t *telem) {
     uint16_t raw_v = ((uint16_t)vh << 8) | vl;
     telem->vbat_mv = (raw_v > 2500 && raw_v < 4500) ? raw_v : 3950;
 
+    kin_i2c_unlock();
     return ESP_OK;
 }
 
@@ -119,6 +135,8 @@ bool kin_power_is_pek_pressed(void) {
 
 #include "board_kinpod_2.06.h"
 #include "kin_approval.h"
+#include "kin_control_center.h"
+#include "kin_pairing.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -143,15 +161,8 @@ static void power_management_task(void *pvParameters) {
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));
 
-        // Check PEK power button press
-        if (kin_power_is_pek_pressed()) {
-            ESP_LOGI(TAG, "PEK Power button pressed -> waking screen");
-            kin_power_notify_activity();
-            continue;
-        }
-
-        // If an approval modal is active, defer dimming and keep screen bright
-        if (kin_approval_is_active()) {
+        // If an approval modal or menu is active, defer dimming and keep screen bright
+        if (kin_approval_is_active() || kin_control_center_is_open() || kin_pairing_is_active()) {
             kin_power_notify_activity();
             continue;
         }

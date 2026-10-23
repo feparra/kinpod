@@ -1,5 +1,8 @@
 #include "kin_avatar.h"
 #include "kin_approval.h"
+#include "kin_control_center.h"
+#include "kin_pairing.h"
+#include "kin_provisioning.h"
 #include "board_kinpod_2.06.h"
 #include "esp_log.h"
 #include "esp_spiffs.h"
@@ -10,6 +13,13 @@
 #include <stdio.h>
 
 static const char *TAG = "KinAvatar";
+
+static inline bool is_display_locked_by_overlay(void) {
+    return kin_approval_is_active() ||
+           kin_control_center_is_open() ||
+           kin_pairing_is_active() ||
+           kin_provisioning_is_active();
+}
 
 // Raw avatar assets embedded by CMake
 extern const uint8_t avatar_astro_start[]   asm("_binary_avatar_astro_raw_start");
@@ -37,8 +47,8 @@ static uint8_t *s_active_sprites[5] = {NULL, NULL, NULL, NULL, NULL};
 static bool s_spiffs_mounted = false;
 
 static esp_err_t kin_avatar_draw_character_sprite(const uint8_t *raw_sprite) {
-    if (kin_approval_is_active()) {
-        return ESP_OK; // Modal has display control, do not draw avatar sprite
+    if (is_display_locked_by_overlay()) {
+        return ESP_OK; // Modal or Menu has display control, do not draw avatar sprite
     }
     if (raw_sprite) {
         return kin_display_draw_sprite(KIN_SPRITE_X, KIN_SPRITE_Y, KIN_SPRITE_W, KIN_SPRITE_H, raw_sprite);
@@ -329,6 +339,11 @@ esp_err_t kin_avatar_set_active(kin_avatar_id_t id) {
     const kin_avatar_profile_t *p = &s_roster[id];
     ESP_LOGI(TAG, "Switched active Kin to [%d: %s (%s)]", id, p->name, p->key);
 
+    if (is_display_locked_by_overlay()) {
+        kin_avatar_load_sprites_for_active();
+        return ESP_OK;
+    }
+
     // 1. Draw base 410x502 screen
     esp_err_t err = kin_display_draw_raw_frame(p->raw_asset_start);
 
@@ -374,8 +389,8 @@ kin_state_t kin_avatar_get_state(void) {
 }
 
 static esp_err_t kin_avatar_render_hud(kin_state_t state, int level) {
-    if (kin_approval_is_active()) {
-        return ESP_OK; // Modal has display control
+    if (is_display_locked_by_overlay()) {
+        return ESP_OK; // Modal or Menu has display control
     }
     if (!s_ptt_dma_buf) return ESP_ERR_INVALID_STATE;
 
@@ -483,8 +498,8 @@ esp_err_t kin_avatar_set_state(kin_state_t state, int level) {
     s_current_state = state;
     s_state_enter_tick = xTaskGetTickCount();
 
-    if (kin_approval_is_active()) {
-        return ESP_OK; // Modal active: update internal state but suspend display drawing
+    if (is_display_locked_by_overlay()) {
+        return ESP_OK; // Modal or Menu active: update internal state but suspend display drawing
     }
 
     // Trigger state-specific character animation frame for the active avatar
@@ -511,20 +526,20 @@ static void avatar_ui_anim_task(void *pvParameters) {
 
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(150));
-        if (kin_approval_is_active()) {
+        if (is_display_locked_by_overlay()) {
             idle_ticks = 0;
-            continue; // Modal is active: suspend all background animations
+            continue; // Modal or Menu is active: suspend all background animations
         }
         anim_step++;
 
         if (s_current_state == KIN_STATE_IDLE) {
             idle_ticks++;
-            // Natural living blink every ~3.0s (20 ticks * 150ms = 3000ms) for ALL characters!
-            if (idle_ticks % 20 == 0) {
+            // Natural living blink every ~9.0s (60 ticks * 150ms = 9000ms) for an organic companion feel
+            if (idle_ticks % 60 == 0) {
                 if (s_active_sprites[1] && s_active_sprites[0]) {
                     ESP_LOGI(TAG, "Living Blink triggered for %s!", s_roster[s_active_avatar].name);
                     kin_avatar_draw_character_sprite(s_active_sprites[1]);
-                    vTaskDelay(pdMS_TO_TICKS(220));
+                    vTaskDelay(pdMS_TO_TICKS(140));
                     kin_avatar_draw_character_sprite(s_active_sprites[0]);
                 }
             }

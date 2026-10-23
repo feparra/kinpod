@@ -24,6 +24,10 @@ extern "C" {
 #define AXP2101_REG_BAT_VOLT_H   0x34
 #define AXP2101_REG_BAT_VOLT_L   0x35
 #define AXP2101_REG_BAT_PERCENT  0xA4
+#define AXP2101_REG_VBUS_CURR_LIMIT 0x18
+#define AXP2101_REG_CHG_VOLT        0x61
+#define AXP2101_REG_CHG_CURR        0x62
+#define AXP2101_REG_CHG_ENABLE      0x69
 
 /**
  * @brief Telemetry data read from AXP2101 PMU.
