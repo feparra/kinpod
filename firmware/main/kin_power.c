@@ -47,7 +47,11 @@ esp_err_t kin_power_init(void) {
         return ret;
     }
 
-    ESP_LOGI(TAG, "KinPod Power Subsystem online: ALDO2 (AMOLED 3.3V) & ALDO3 (Touch 3.3V) active");
+    // 4. Enable Power Button (PEK) Short/Long Press interrupts in AXP2101 INTEN2 (0x41)
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, 0x41, 0x03);
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, 0x49, 0xFF); // Clear pending
+
+    ESP_LOGI(TAG, "KinPod Power Subsystem online: ALDO2 (AMOLED 3.3V) & ALDO3 (Touch 3.3V) active, PEK button enabled");
     return ESP_OK;
 }
 
@@ -101,3 +105,15 @@ esp_err_t kin_power_get_telemetry(kin_power_telemetry_t *telem) {
 
     return ESP_OK;
 }
+
+bool kin_power_is_pek_pressed(void) {
+    uint8_t irq2 = 0;
+    if (kin_i2c_read_reg(AXP2101_I2C_ADDR, 0x49, &irq2) == ESP_OK) {
+        if (irq2 & 0x03) { // Bit 0: Long press, Bit 1: Short press
+            kin_i2c_write_reg(AXP2101_I2C_ADDR, 0x49, irq2); // Clear active bits
+            return true;
+        }
+    }
+    return false;
+}
+

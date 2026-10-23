@@ -51,6 +51,11 @@ esp_err_t kin_power_set_aldo2(bool enable);
  */
 esp_err_t kin_power_get_telemetry(kin_power_telemetry_t *telem);
 
+/**
+ * @brief Checks if the physical PWR button (AXP2101 PEK) was pressed.
+ */
+bool kin_power_is_pek_pressed(void);
+
 #ifdef __cplusplus
 }
 #endif

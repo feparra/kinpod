@@ -36,6 +36,16 @@ esp_err_t kin_display_init(void);
 esp_err_t kin_display_draw_raw_frame(const uint8_t *raw_frame);
 
 /**
+ * @brief Draws a rectangular sub-region to the AMOLED display via DMA.
+ */
+esp_err_t kin_display_draw_region(int x_start, int y_start, int x_end, int y_end, const uint16_t *pixels);
+
+/**
+ * @brief Streams a w x h RGB565 sprite directly to a sub-window of the AMOLED panel via DMA.
+ */
+esp_err_t kin_display_draw_sprite(int x, int y, int w, int h, const uint8_t *raw_sprite);
+
+/**
  * @brief Renders the official true-black KinPod boot splash logo on the AMOLED panel.
  */
 esp_err_t kin_display_draw_splash(void);

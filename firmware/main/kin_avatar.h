@@ -62,6 +62,33 @@ esp_err_t kin_avatar_prev(void);
  */
 esp_err_t kin_avatar_set_by_name(const char *name);
 
+typedef enum {
+    KIN_STATE_IDLE = 0,
+    KIN_STATE_LISTENING = 1,
+    KIN_STATE_THINKING = 2,
+    KIN_STATE_SPEAKING = 3
+} kin_state_t;
+
+/**
+ * @brief Sets character interaction state and displays corresponding UI feedback.
+ * @param state KIN_STATE_IDLE, KIN_STATE_LISTENING, KIN_STATE_THINKING, or KIN_STATE_SPEAKING.
+ * @param level Audio VU level (0-100) or animation tick.
+ */
+esp_err_t kin_avatar_set_state(kin_state_t state, int level);
+
+/**
+ * @brief Returns the current character state.
+ */
+kin_state_t kin_avatar_get_state(void);
+
+/**
+ * @brief Shows or hides the dynamic Push-To-Talk listening HUD overlay on the AMOLED panel (legacy wrapper).
+ * @param active true to display recording pill and animated VU bars; false to restore avatar.
+ * @param vu_pct Current mic audio VU meter level (0 to 100).
+ */
+esp_err_t kin_avatar_show_ptt_overlay(bool active, int vu_pct);
+
 #ifdef __cplusplus
 }
 #endif
+

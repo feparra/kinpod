@@ -8,6 +8,7 @@
 #include "esp_lcd_touch.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "driver/gpio.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -96,6 +97,66 @@ esp_err_t kin_display_clear(void) {
     return ESP_OK;
 }
 
+esp_err_t kin_display_draw_region(int x_start, int y_start, int x_end, int y_end, const uint16_t *pixels) {
+    if (s_panel_handle == NULL || pixels == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    esp_err_t ret = esp_lcd_panel_draw_bitmap(s_panel_handle, x_start, y_start, x_end, y_end, pixels);
+    if (ret == ESP_OK && s_trans_done_sem) {
+        xSemaphoreTake(s_trans_done_sem, pdMS_TO_TICKS(100));
+    }
+    return ret;
+}
+
+static uint8_t *s_sprite_dma_buf = NULL;
+#define SPRITE_CHUNK_LINES 40
+
+esp_err_t kin_display_draw_sprite(int x, int y, int w, int h, const uint8_t *raw_sprite) {
+    if (s_panel_handle == NULL || raw_sprite == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    const size_t line_pixels = KIN_LCD_H_RES; // 410 pixels
+    const size_t chunk_bytes = line_pixels * SPRITE_CHUNK_LINES * sizeof(uint16_t);
+
+    if (!s_sprite_dma_buf) {
+        s_sprite_dma_buf = (uint8_t *)heap_caps_malloc(chunk_bytes, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
+        if (!s_sprite_dma_buf) {
+            s_sprite_dma_buf = (uint8_t *)malloc(chunk_bytes);
+        }
+        if (!s_sprite_dma_buf) {
+            ESP_LOGE(TAG, "Failed to allocate DMA buffer for sprite transfer");
+            return ESP_ERR_NO_MEM;
+        }
+    }
+
+    uint16_t *dma_pixels = (uint16_t *)s_sprite_dma_buf;
+    const uint16_t *src_pixels = (const uint16_t *)raw_sprite;
+
+    for (int cur_y = 0; cur_y < h; cur_y += SPRITE_CHUNK_LINES) {
+        int lines = (cur_y + SPRITE_CHUNK_LINES <= h) ? SPRITE_CHUNK_LINES : (h - cur_y);
+
+        // Clear DMA chunk buffer to pure AMOLED black (410 * lines pixels)
+        memset(dma_pixels, 0x00, lines * line_pixels * sizeof(uint16_t));
+
+        // Copy sprite rows into centered window [x .. x+w]
+        for (int row = 0; row < lines; row++) {
+            int src_row = cur_y + row;
+            int dst_offset = row * line_pixels + x;
+            memcpy(&dma_pixels[dst_offset], &src_pixels[src_row * w], w * sizeof(uint16_t));
+        }
+
+        // Send full scanlines (0 to 410) via proven hardware QSPI DMA
+        esp_lcd_panel_draw_bitmap(s_panel_handle, 0, y + cur_y, KIN_LCD_H_RES, y + cur_y + lines, dma_pixels);
+
+        if (s_trans_done_sem) {
+            xSemaphoreTake(s_trans_done_sem, pdMS_TO_TICKS(100));
+        }
+    }
+
+    return ESP_OK;
+}
+
 esp_err_t kin_display_draw_raw_frame(const uint8_t *raw_frame) {
     if (s_panel_handle == NULL || raw_frame == NULL) {
         return ESP_ERR_INVALID_ARG;
@@ -151,7 +212,7 @@ esp_err_t kin_touch_init(void) {
         return ESP_OK;
     }
 
-    ESP_LOGI(TAG, "Initializing Touchscreen FT3168 (Address 0x38)...");
+    ESP_LOGI(TAG, "Initializing Touchscreen Controller...");
 
     i2c_master_bus_handle_t i2c_bus = bsp_i2c_get_handle();
     if (!i2c_bus) {
@@ -159,18 +220,45 @@ esp_err_t kin_touch_init(void) {
         return ESP_ERR_INVALID_STATE;
     }
 
-    // Verify touch controller acknowledges address 0x38
-    esp_err_t probe_ret = i2c_master_probe(i2c_bus, 0x38, 100);
-    if (probe_ret != ESP_OK) {
-        ESP_LOGW(TAG, "Touch address 0x38 probe: %s", esp_err_to_name(probe_ret));
+    // 1. Hardware Reset: Pulse GPIO 9 (BSP_LCD_TOUCH_RST) to bring touch chip out of reset
+    gpio_config_t rst_io = {
+        .pin_bit_mask = BIT64(GPIO_NUM_9),
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    gpio_config(&rst_io);
+    gpio_set_level(GPIO_NUM_9, 0); // Assert reset
+    vTaskDelay(pdMS_TO_TICKS(20));
+    gpio_set_level(GPIO_NUM_9, 1); // Release reset
+    vTaskDelay(pdMS_TO_TICKS(60)); // Allow touch MCU to initialize
+
+    // 2. Scan I2C0 Bus to detect touch controller
+    ESP_LOGI(TAG, "Scanning I2C0 bus for touch devices...");
+    uint8_t touch_addr = 0x38;
+    bool found = false;
+
+    for (uint8_t addr = 0x08; addr < 0x78; addr++) {
+        if (i2c_master_probe(i2c_bus, addr, 50) == ESP_OK) {
+            ESP_LOGI(TAG, "  -> Found I2C device at 0x%02X", addr);
+            if (addr == 0x38 || addr == 0x5A || addr == 0x14 || addr == 0x24) {
+                touch_addr = addr;
+                found = true;
+            }
+        }
+    }
+
+    if (found) {
+        ESP_LOGI(TAG, "Active Touchscreen Controller confirmed at I2C address 0x%02X [OK]", touch_addr);
     } else {
-        ESP_LOGI(TAG, "FT3168 acknowledged at I2C address 0x38 [OK]");
+        ESP_LOGW(TAG, "No known touch address acknowledged; attempting default 0x%02X", touch_addr);
     }
 
     const esp_lcd_touch_config_t tp_cfg = {
         .x_max = KIN_LCD_H_RES,
         .y_max = KIN_LCD_V_RES,
-        .rst_gpio_num = GPIO_NUM_NC, // Handled above with proper 200ms delay
+        .rst_gpio_num = GPIO_NUM_9,
         .int_gpio_num = GPIO_NUM_38,
         .levels = {
             .reset = 0,
@@ -185,6 +273,7 @@ esp_err_t kin_touch_init(void) {
 
     esp_lcd_panel_io_handle_t tp_io_handle = NULL;
     esp_lcd_panel_io_i2c_config_t tp_io_config = ESP_LCD_TOUCH_IO_I2C_FT5x06_CONFIG();
+    tp_io_config.dev_addr = touch_addr;
     tp_io_config.scl_speed_hz = 100000;
 
     esp_err_t ret = esp_lcd_new_panel_io_i2c(i2c_bus, &tp_io_config, &tp_io_handle);
@@ -199,7 +288,7 @@ esp_err_t kin_touch_init(void) {
         return ret;
     }
 
-    ESP_LOGI(TAG, "Touchscreen Online: FT3168 Active on I2C0 [OK]");
+    ESP_LOGI(TAG, "Touchscreen Online: Controller Active on I2C0 [OK]");
     return ESP_OK;
 }
 

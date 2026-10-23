@@ -87,22 +87,12 @@ for idx, r in enumerate(ROSTER):
     sub_w = draw.textlength(r['sub'], font=font_sub)
     draw.text(((W - sub_w) / 2, 94), r['sub'], fill=accent, font=font_sub)
 
-    # 3. Squircle Card Container
-    card_size = 246
-    card_x = (W - card_size) // 2
-    card_y = 120
-    # Outer subtle accent glow
-    draw.rounded_rectangle([card_x - 3, card_y - 3, card_x + card_size + 3, card_y + card_size + 3], radius=36, outline=accent, width=2)
-    # Inner dark fill
-    draw.rounded_rectangle([card_x, card_y, card_x + card_size, card_y + card_size], radius=33, fill=(10, 10, 12), outline=(40, 40, 45), width=1)
-
-    # 4. Paste Character Sprite
+    # 3. Paste Character Sprite (Card removed for pure AMOLED black)
     char_im = Image.open(r['img']).convert('RGBA')
-    # Resize to fit comfortably in card
-    sprite_size = 216
+    sprite_size = 240
     char_resized = char_im.resize((sprite_size, sprite_size), Image.Resampling.LANCZOS)
-    sp_x = card_x + (card_size - sprite_size) // 2
-    sp_y = card_y + (card_size - sprite_size) // 2
+    sp_x = (W - sprite_size) // 2
+    sp_y = 130
     img.paste(char_resized, (sp_x, sp_y), char_resized)
 
     # 5. Bottom Navigation: Dots Indicator (6 dots)
