@@ -50,60 +50,60 @@ export function AnatomyTurntable() {
     {
       icon: Cpu,
       title: "2.06\" Curved AMOLED Face",
-      detail: "410×502 px resolution with 60 FPS refresh rate. Deep ink blacks ensure avatars float seamlessly in obsidian space without visible panel bezels.",
+      detail: "410×502 px resolution with 60 FPS refresh rate. Deep ink blacks ensure avatars float seamlessly in obsidian space.",
     },
     {
       icon: Mic,
-      title: "ES7210 PTT Microphone Array",
-      detail: "Push-To-Talk triggered by lateral BOOT button (KEY3 GPIO18). Streams 16-bit PCM voice straight to your local agent or speech model.",
+      title: "ES7210 PTT Mic Array",
+      detail: "Push-To-Talk triggered by lateral BOOT button (KEY3 GPIO18). Streams 16-bit PCM voice to your agent.",
     },
     {
       icon: Volume2,
-      title: "ES8311 I2S + NS4150 Speaker",
-      detail: "High-output Class-D amplifier driving a front acoustic transducer through CNC precision-machined sound slits for crisp vocal projection.",
+      title: "ES8311 + NS4150 Speaker",
+      detail: "High-output Class-D amplifier driving a front acoustic transducer through CNC precision-machined sound slits.",
     },
     {
       icon: Shield,
       title: "CST9220 Touchscreen Guardian",
-      detail: "Capacitive touch controller powering the physical Human-In-The-Loop approval modal. High-risk agent actions pause until wearer taps approve.",
+      detail: "Capacitive touch controller powering the physical Human-In-The-Loop approval modal on your chest.",
     },
     {
       icon: BatteryCharging,
-      title: "AXP2101 PMU & Auto-Dimming",
-      detail: "Smart inactivity throttle drops brightness to 15% after 30s of idle time, snapping back to 100% on touch or voice to achieve all-day wear.",
+      title: "AXP2101 PMU & Auto-Dim",
+      detail: "Smart throttle drops brightness to 15% after 30s idle, snapping to 100% on touch or voice for all-day runtime.",
     },
     {
       icon: Magnet,
       title: "Neodymium Magnetic Mount",
-      detail: "High-strength N52 magnet array sandwiches through any shirt, hoodie, or jacket. Zero sagging, zero pinch, instant single-hand unclip.",
+      detail: "High-strength N52 magnet array sandwiches through any shirt or hoodie. Zero sagging, instant unclip.",
     },
   ];
 
   return (
-    <section id="anatomy" className="relative border-t border-[#40372e] py-24 bg-[#100904]">
-      <div className="mx-auto max-w-7xl px-6">
+    <section id="anatomy" className="relative border-t border-[#40372e] py-16 sm:py-24 bg-[#100904]">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-12 border-b border-[#40372e]">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 sm:pb-12 border-b border-[#40372e]">
           <div>
-            <div className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#dc5000]">
+            <div className="inline-flex items-center gap-2 font-mono text-[10px] sm:text-[11px] uppercase tracking-widest text-[#dc5000]">
               <Eye className="h-3.5 w-3.5" />
               <span>PHYSICAL INDUSTRIAL DESIGN</span>
             </div>
-            <h2 className="mt-3 text-3xl sm:text-4xl md:text-5xl font-medium uppercase tracking-tight text-[#ffedd7] leading-none">
+            <h2 className="mt-3 text-2xl sm:text-4xl md:text-5xl font-medium uppercase tracking-tight text-[#ffedd7] leading-none">
               360° PHYSICAL ANATOMY.
             </h2>
-            <p className="mt-3 max-w-xl text-base text-[#ffedd7]/80">
+            <p className="mt-3 max-w-xl text-sm sm:text-base text-[#ffedd7]/80">
               Not a render concept. Real custom hardware engineered around the Waveshare ESP32-S3 Touch AMOLED 2.06&quot; platform.
             </p>
           </div>
 
-          <div className="font-mono text-xs uppercase tracking-wider text-[#6c5f51]">
+          <div className="font-mono text-[11px] sm:text-xs uppercase tracking-wider text-[#6c5f51]">
             <span>ESP32-S3 • 16MB FLASH • 8MB PSRAM</span>
           </div>
         </div>
 
         {/* Interactive View Switcher */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="mt-6 sm:mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           {/* Main Visual Display */}
           <div className="lg:col-span-8 flex flex-col">
             <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[12px] border border-[#40372e] bg-[#1a120c] shadow-2xl">
@@ -113,41 +113,41 @@ export function AnatomyTurntable() {
                 fill
                 className="object-cover transition-all duration-500"
               />
-              <div className="absolute top-4 left-4 z-10 rounded-[9999px] border border-[#40372e] bg-[#100904]/80 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-[#ffedd7] backdrop-blur-md">
+              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10 rounded-[9999px] border border-[#40372e] bg-[#100904]/80 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-[9px] sm:text-[10px] uppercase tracking-widest text-[#ffedd7] backdrop-blur-md">
                 {currentView.category}
               </div>
             </div>
 
-            {/* View Selector Thumbnails */}
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {/* Mobile-Friendly Swipeable View Selector */}
+            <div className="mt-3 sm:mt-4 flex overflow-x-auto pb-2 gap-2 scrollbar-none snap-x sm:grid sm:grid-cols-5 sm:overflow-visible sm:pb-0">
               {views.map((v, idx) => (
                 <button
                   key={v.id}
                   onClick={() => setActiveViewIndex(idx)}
-                  className={`flex flex-col items-start rounded-md border p-2 text-left transition-all cursor-pointer ${
+                  className={`flex shrink-0 w-36 sm:w-auto flex-col items-start rounded-md border p-2 text-left transition-all cursor-pointer snap-start ${
                     activeViewIndex === idx
                       ? "border-[#dc5000] bg-[#382416] text-[#ffedd7]"
                       : "border-[#40372e] bg-[#1a120c]/40 text-[#6c5f51] hover:border-[#6c5f51] hover:text-[#ffedd7]"
                   }`}
                 >
-                  <span className="font-mono text-[9px] uppercase tracking-wider">
+                  <span className="font-mono text-[8px] sm:text-[9px] uppercase tracking-wider">
                     VIEW 0{idx + 1}
                   </span>
-                  <span className="font-mono text-xs font-semibold truncate w-full">
+                  <span className="font-mono text-[11px] sm:text-xs font-semibold truncate w-full">
                     {v.title}
                   </span>
                 </button>
               ))}
             </div>
 
-            <p className="mt-3 text-sm text-[#ffedd7]/80 italic">
+            <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-[#ffedd7]/80 italic">
               &quot;{currentView.description}&quot;
             </p>
           </div>
 
           {/* Subsystems Specification List */}
-          <div className="lg:col-span-4 flex flex-col gap-3">
-            <div className="font-mono text-xs uppercase tracking-widest text-[#6c5f51] mb-1">
+          <div className="lg:col-span-4 flex flex-col gap-2.5 sm:gap-3">
+            <div className="font-mono text-[11px] uppercase tracking-widest text-[#6c5f51] mb-1">
               ENGINEERED SUBSYSTEMS
             </div>
             {subsystems.map((sub, idx) => {
@@ -155,17 +155,17 @@ export function AnatomyTurntable() {
               return (
                 <div
                   key={idx}
-                  className="rounded-[12px] border border-[#40372e] bg-[#1a120c]/80 p-4 transition-colors hover:border-[#6c5f51]"
+                  className="rounded-[12px] border border-[#40372e] bg-[#1a120c]/80 p-3.5 sm:p-4 transition-colors hover:border-[#6c5f51]"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-md border border-[#40372e] bg-[#100904] text-[#dc5000]">
-                      <Icon className="h-3.5 w-3.5" />
+                    <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-md border border-[#40372e] bg-[#100904] text-[#dc5000]">
+                      <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </div>
-                    <h3 className="font-mono text-xs uppercase tracking-wider font-semibold text-[#ffedd7]">
+                    <h3 className="font-mono text-[11px] sm:text-xs uppercase tracking-wider font-semibold text-[#ffedd7]">
                       {sub.title}
                     </h3>
                   </div>
-                  <p className="mt-2 text-xs text-[#ffedd7]/75 leading-relaxed">
+                  <p className="mt-1.5 text-xs text-[#ffedd7]/75 leading-relaxed">
                     {sub.detail}
                   </p>
                 </div>

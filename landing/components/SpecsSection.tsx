@@ -1,6 +1,6 @@
 "use client";
 
-import { Cpu, Eye, Volume2, Shield, Battery, Radio, Box } from "lucide-react";
+import { Cpu, Eye, Volume2, Shield, Battery, Box } from "lucide-react";
 
 export function SpecsSection() {
   const specCategories = [
@@ -67,50 +67,50 @@ export function SpecsSection() {
   ];
 
   return (
-    <section id="specs" className="relative border-t border-[#40372e] py-24 bg-[#100904]">
-      <div className="mx-auto max-w-7xl px-6">
+    <section id="specs" className="relative border-t border-[#40372e] py-16 sm:py-24 bg-[#100904]">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-12 border-b border-[#40372e]">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 sm:pb-12 border-b border-[#40372e]">
           <div>
-            <div className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-[#dc5000]">
+            <div className="inline-flex items-center gap-2 font-mono text-[10px] sm:text-[11px] uppercase tracking-widest text-[#dc5000]">
               <Cpu className="h-3.5 w-3.5" />
               <span>MUSEUM ARCHIVAL RECORD</span>
             </div>
-            <h2 className="mt-3 text-3xl sm:text-4xl md:text-5xl font-medium uppercase tracking-tight text-[#ffedd7] leading-none">
+            <h2 className="mt-3 text-2xl sm:text-4xl md:text-5xl font-medium uppercase tracking-tight text-[#ffedd7] leading-none">
               TECHNICAL SPECIFICATIONS.
             </h2>
-            <p className="mt-3 max-w-xl text-base text-[#ffedd7]/80">
+            <p className="mt-3 max-w-xl text-sm sm:text-base text-[#ffedd7]/80">
               Built on verified production components. Open-source firmware, schematics, and pinout definitions freely accessible.
             </p>
           </div>
 
-          <div className="font-mono text-xs uppercase text-[#6c5f51]">
+          <div className="font-mono text-[11px] sm:text-xs uppercase text-[#6c5f51]">
             <span>ENGINEERED FOR LONGEVITY & HACKABILITY</span>
           </div>
         </div>
 
         {/* Categories Grid */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {specCategories.map((cat, idx) => {
             const Icon = cat.icon;
             return (
               <div
                 key={idx}
-                className="rounded-[12px] border border-[#40372e] bg-[#1a120c] p-6 transition-all hover:border-[#6c5f51]"
+                className="rounded-[12px] border border-[#40372e] bg-[#1a120c] p-4 sm:p-6 transition-all hover:border-[#6c5f51]"
               >
-                <div className="flex items-center gap-2.5 border-b border-[#40372e] pb-4">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-md border border-[#40372e] bg-[#100904] text-[#dc5000]">
-                    <Icon className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-2.5 border-b border-[#40372e] pb-3 sm:pb-4">
+                  <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-md border border-[#40372e] bg-[#100904] text-[#dc5000]">
+                    <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   </div>
-                  <h3 className="font-mono text-xs uppercase tracking-wider font-semibold text-[#ffedd7]">
+                  <h3 className="font-mono text-[11px] sm:text-xs uppercase tracking-wider font-semibold text-[#ffedd7]">
                     {cat.category}
                   </h3>
                 </div>
 
-                <dl className="mt-4 flex flex-col gap-3 font-mono text-xs">
+                <dl className="mt-3 sm:mt-4 flex flex-col gap-2.5 sm:gap-3 font-mono text-[11px] sm:text-xs">
                   {cat.specs.map((item, sIdx) => (
                     <div key={sIdx} className="flex flex-col pb-2 border-b border-[#40372e]/40 last:border-0 last:pb-0">
-                      <dt className="text-[10px] uppercase text-[#6c5f51] tracking-wider">
+                      <dt className="text-[9px] sm:text-[10px] uppercase text-[#6c5f51] tracking-wider">
                         {item.name}
                       </dt>
                       <dd className="mt-0.5 text-[#ffedd7] font-medium leading-normal">
