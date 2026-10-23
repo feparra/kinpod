@@ -348,4 +348,5 @@ async def kinpod_ws(ws: WebSocket):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("kin_bridge:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.getenv("PORT", os.getenv("KINPOD_PORT", "8000")))
+    uvicorn.run("kin_bridge:app", host="0.0.0.0", port=port, reload=True)
