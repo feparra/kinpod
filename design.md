@@ -66,7 +66,7 @@ All image assets are staged inside [`assets/marketing/`](file:///c:/Users/FERNA/
 1. **`hero_editorial_4k.jpg`**: Ultra-luxury 3/4 hero floating product render. Curved AMOLED screen glowing with the Astro avatar, side BOOT and PWR buttons, warm rim light in a `#100904` void.
 2. **`chest_lifestyle_4k.jpg`**: Real-world chest-worn editorial shot on a dark charcoal minimalist techwear jacket showing the red OpenClaw avatar glowing on the wearer's chest.
 3. **`turntable_360_4k.jpg`**: 3-angle industrial design presentation (Isometric buttons, Front AMOLED, Acoustic CNC speaker profile).
-4. **`characters_roster_4k.jpg`**: The 4 core 3D companion characters (Astro, Crab, Hermes, Muse) floating in museum gallery lighting.
+4. **`characters_roster_4k.jpg`**: The 6 authentic official Kin characters (Crab/OpenClaw, Astro/Gemini, Octo-Claude/Claude, Hermes/Hermes, Muse/Creative, Dots/Ollama) rendered in 3840×2160 4K UHD directly from original high-resolution assets in darkroom museum lighting.
 5. **`real_hardware_front_crab.jpg`**: Authentic physical photography of the final wearable running OpenClaw.
 6. **`real_hardware_34_astro.jpg`**: Authentic physical photography of the final wearable running Gemini Astro on desktop stand.
 7. **`real_hardware_side_speaker.jpg`**: Close-up of the CNC speaker grille and magnetic clip chassis.
