@@ -24,12 +24,13 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
         ESP_LOGI(TAG, "Wi-Fi Station started, connecting to AP...");
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        wifi_event_sta_disconnected_t *disc = (wifi_event_sta_disconnected_t *)event_data;
         s_is_connected = false;
         xEventGroupClearBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
         if (!kin_provisioning_is_active()) {
             s_retry_num++;
-            ESP_LOGW(TAG, "Wi-Fi disconnected. Reconnecting (attempt %d)...", s_retry_num);
-            vTaskDelay(pdMS_TO_TICKS(1500));
+            ESP_LOGW(TAG, "Wi-Fi disconnected (reason %d). Reconnecting (attempt %d)...",
+                     disc ? disc->reason : 0, s_retry_num);
             esp_wifi_connect();
         } else {
             ESP_LOGI(TAG, "Station disconnected while Provisioning SoftAP is active (suppressing reconnect)");

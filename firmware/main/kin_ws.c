@@ -2,6 +2,7 @@
 #include "kin_audio.h"
 #include "kin_avatar.h"
 #include "kin_approval.h"
+#include "kin_power.h"
 #include "esp_websocket_client.h"
 #include "cJSON.h"
 #include "esp_log.h"
@@ -34,6 +35,7 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
             s_is_connected = false;
             break;
         case WEBSOCKET_EVENT_DATA:
+            kin_power_notify_activity();
             if (data->op_code == 0x01) { // Text JSON frame
                 char *json_str = (char *)malloc(data->data_len + 1);
                 if (json_str) {

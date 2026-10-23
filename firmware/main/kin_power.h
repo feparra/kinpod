@@ -56,6 +56,23 @@ esp_err_t kin_power_get_telemetry(kin_power_telemetry_t *telem);
  */
 bool kin_power_is_pek_pressed(void);
 
+/**
+ * @brief Notifies the power management system of user activity (touch, button, speech).
+ * Resets the inactivity timer and restores 100% brightness if dimmed.
+ */
+void kin_power_notify_activity(void);
+
+/**
+ * @brief Initializes the power management auto-dimming task.
+ * Dims display to 15% brightness after 30 seconds of inactivity.
+ */
+esp_err_t kin_power_management_init(void);
+
+/**
+ * @brief Returns true if the display is currently dimmed.
+ */
+bool kin_power_is_dimmed(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -117,3 +117,62 @@ bool kin_power_is_pek_pressed(void) {
     return false;
 }
 
+#include "board_kinpod_2.06.h"
+#include "kin_approval.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+static uint32_t s_last_activity_tick = 0;
+static bool s_is_dimmed = false;
+
+void kin_power_notify_activity(void) {
+    s_last_activity_tick = xTaskGetTickCount();
+    if (s_is_dimmed) {
+        s_is_dimmed = false;
+        kin_display_set_brightness(100);
+        ESP_LOGI(TAG, "Display woke up: Brightness restored to 100%%");
+    }
+}
+
+bool kin_power_is_dimmed(void) {
+    return s_is_dimmed;
+}
+
+static void power_management_task(void *pvParameters) {
+    s_last_activity_tick = xTaskGetTickCount();
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+
+        // Check PEK power button press
+        if (kin_power_is_pek_pressed()) {
+            ESP_LOGI(TAG, "PEK Power button pressed -> waking screen");
+            kin_power_notify_activity();
+            continue;
+        }
+
+        // If an approval modal is active, defer dimming and keep screen bright
+        if (kin_approval_is_active()) {
+            kin_power_notify_activity();
+            continue;
+        }
+
+        uint32_t elapsed_ms = (uint32_t)pdTICKS_TO_MS(xTaskGetTickCount() - s_last_activity_tick);
+        if (!s_is_dimmed && elapsed_ms >= 30000) { // 30s inactivity timeout
+            s_is_dimmed = true;
+            // Smoothly ramp brightness down to 15% (80 -> 60 -> 40 -> 20 -> 15)
+            for (int b = 80; b >= 15; b -= 20) {
+                kin_display_set_brightness(b);
+                vTaskDelay(pdMS_TO_TICKS(40));
+            }
+            kin_display_set_brightness(15);
+            ESP_LOGI(TAG, "Inactivity timeout (30s): Display dimmed to 15%% for battery saving");
+        }
+    }
+}
+
+esp_err_t kin_power_management_init(void) {
+    xTaskCreatePinnedToCore(power_management_task, "kin_pwr_mgmt", 3072, NULL, 3, NULL, 0);
+    ESP_LOGI(TAG, "Power Management online: Auto-dim to 15%% after 30s inactivity");
+    return ESP_OK;
+}
+

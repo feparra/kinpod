@@ -115,6 +115,7 @@ esp_err_t kin_audio_set_volume(uint8_t volume_pct) {
 
 esp_err_t kin_audio_play(const uint8_t *pcm_data, size_t len) {
     if (!s_spk_handle || !pcm_data || len == 0) return ESP_ERR_INVALID_ARG;
+    kin_power_notify_activity();
     int ret = esp_codec_dev_write(s_spk_handle, (void *)pcm_data, len);
     return ret == ESP_CODEC_DEV_OK ? ESP_OK : ESP_FAIL;
 }
@@ -215,6 +216,7 @@ static void ptt_monitor_task(void *pvParameters) {
         s_ptt_pressed = is_pressed;
 
         if (is_pressed) {
+            kin_power_notify_activity();
             if (!was_pressed) {
                 was_pressed = true;
                 press_start_tick = xTaskGetTickCount();

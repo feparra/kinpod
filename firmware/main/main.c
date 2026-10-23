@@ -115,6 +115,7 @@ static void touch_gesture_task(void *pvParameters) {
         bool is_touched = kin_touch_get_point(&x, &y);
 
         if (is_touched) {
+            kin_power_notify_activity();
             if (!was_touched) {
                 // Touch down
                 was_touched = true;
@@ -320,6 +321,7 @@ void app_main(void) {
     vTaskDelay(pdMS_TO_TICKS(2000));
     kin_approval_init();
     kin_avatar_set_active(KIN_AVATAR_CRAB); // Default to OpenClaw Crab (#EF4444)
+    kin_power_management_init();
 
     // 10. Start Touch Gesture Task on Core 1
     xTaskCreatePinnedToCore(

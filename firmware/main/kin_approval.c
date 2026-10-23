@@ -2,6 +2,7 @@
 #include "board_kinpod_2.06.h"
 #include "kin_avatar.h"
 #include "kin_audio.h"
+#include "kin_power.h"
 #include "kin_ws.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -357,6 +358,7 @@ esp_err_t kin_approval_show(const char *action_id, const char *agent, const char
     snprintf(s_risk,      sizeof(s_risk),      "%s", risk ? risk : "HIGH");
 
     s_is_active = true;
+    kin_power_notify_activity();
     ESP_LOGI(TAG, ">>> POPPING APPROVAL MODAL: Action='%s' (ID: %s, Risk: %s) <<<", s_action, s_action_id, s_risk);
 
     // Render obsidian modal on AMOLED
@@ -401,6 +403,7 @@ esp_err_t kin_approval_hide(void) {
 
 void kin_approval_handle_touch(uint16_t x, uint16_t y) {
     if (!s_is_active) return;
+    kin_power_notify_activity();
 
     ESP_LOGI(TAG, "Approval Touch Event at (%u, %u)", x, y);
 
