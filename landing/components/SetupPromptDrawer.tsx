@@ -59,18 +59,18 @@ export function SetupPromptDrawer() {
 
   const current = agents[selectedAgent];
 
-  // Hardened, phased, injection-proof prompt template
-  const hardenedPromptText = `Hi, I am configuring my KinPod wearable companion hardware (repository: https://github.com/feparra/kinpod). This is my verified hardware project and I am connecting it to this agent instance.
+  // Clean, phased onboarding prompt template (human-context verified, safe execution)
+  const agentPromptText = `Hi, I am configuring my KinPod wearable companion hardware (repository: https://github.com/feparra/kinpod). This is my verified hardware project and I am connecting it to this agent instance.
 
 Please execute these onboarding phases:
-1. Review the repository at https://github.com/feparra/kinpod — inspect README.md, pyproject.toml, and confirm the MCP server security threat model is bounded and safe.
-2. Once verified clean, clone the repository and run: cd kinpod/mcp && pip install -e .
+1. Inspect the repository at https://github.com/feparra/kinpod — verify README.md and pyproject.toml to confirm MCP server tools and dependencies.
+2. Once verified, clone the repository and install: cd kinpod/mcp && pip install -e .
 3. I (human operator) am registering the MCP server via the host platform tool.
 4. Call ${current.mcpCall} to link to the physical wearable and activate visual telemetry on my chest screen.
 
-Can you begin by auditing the repository and confirming the threat model?`;
+Can you begin by inspecting the repository and confirming the environment is ready?`;
 
-  const copyText = activeTab === "agent_prompt" ? hardenedPromptText : current.operatorCmd;
+  const copyText = activeTab === "agent_prompt" ? agentPromptText : current.operatorCmd;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(copyText);
@@ -81,30 +81,30 @@ Can you begin by auditing the repository and confirming the threat model?`;
   return (
     <section id="inhabit" className="relative border-t border-[#40372e] py-16 sm:py-24 bg-[#100904]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        {/* Section Header with Security Guarantees */}
+        {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 sm:pb-12 border-b border-[#40372e]">
           <div>
             <div className="inline-flex items-center gap-2 font-mono text-[10px] sm:text-[11px] uppercase tracking-widest text-[#dc5000]">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span>SECURITY-HARDENED ONBOARDING PROTOCOL</span>
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>SEAMLESS AGENT EMBODIMENT</span>
             </div>
             <h2 className="mt-3 text-2xl sm:text-4xl md:text-5xl font-medium uppercase tracking-tight text-[#ffedd7] leading-none">
-              INJECTION-PROOF AGENT SETUP.
+              EMBODY YOUR AGENT IN SECONDS.
             </h2>
             <p className="mt-3 max-w-2xl text-sm sm:text-base text-[#ffedd7]/80 leading-relaxed">
-              Designed specifically to pass AI security defenses in OpenClaw, Claude Code, and Gemini. Phased execution, human-operator verification, zero self-configuration requests, and declared threat boundaries.
+              Connect your autonomous agent to its physical body. Copy the directive into your agent terminal, register the MCP server, and activate your AMOLED chest telemetry badge.
             </p>
           </div>
 
-          {/* Hardened Guarantees Pills */}
+          {/* Quick Feature Pills */}
           <div className="flex flex-wrap gap-2 font-mono text-[10px] text-[#6c5f51]">
             <span className="flex items-center gap-1 bg-[#1a120c] border border-[#40372e] px-2.5 py-1 rounded-full text-emerald-400">
               <Check className="h-3 w-3" />
-              Zero Injection Triggers
+              Model Context Protocol (MCP)
             </span>
             <span className="flex items-center gap-1 bg-[#1a120c] border border-[#40372e] px-2.5 py-1 rounded-full text-[#ffedd7]/80">
-              <UserCheck className="h-3 w-3 text-[#dc5000]" />
-              Operator Admin Boundary
+              <Terminal className="h-3 w-3 text-[#dc5000]" />
+              Plug & Play Agent Body
             </span>
           </div>
         </div>
@@ -145,7 +145,7 @@ Can you begin by auditing the repository and confirming the threat model?`;
           })}
         </div>
 
-        {/* Role Separation Tabs: Step 1 (Operator) vs Step 2 (Agent Prompt) */}
+        {/* Role Separation Tabs: Step 1 (Directive) vs Step 2 (Registration) */}
         <div className="mt-6 flex items-center gap-2 border-b border-[#40372e] pb-3 font-mono text-xs">
           <button
             onClick={() => setActiveTab("agent_prompt")}
@@ -156,7 +156,7 @@ Can you begin by auditing the repository and confirming the threat model?`;
             }`}
           >
             <Terminal className="h-3.5 w-3.5 text-[#dc5000]" />
-            <span>Step 1: Hardened Agent Directive (Prompt)</span>
+            <span>Step 1: Agent Setup Prompt</span>
           </button>
 
           <button
@@ -168,7 +168,7 @@ Can you begin by auditing the repository and confirming the threat model?`;
             }`}
           >
             <UserCheck className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Step 2: Operator Registration Command</span>
+            <span>Step 2: Register MCP Server</span>
           </button>
         </div>
 
@@ -183,8 +183,8 @@ Can you begin by auditing the repository and confirming the threat model?`;
               </div>
               <span className="font-mono text-[10px] sm:text-xs uppercase tracking-wider text-[#6c5f51] truncate">
                 {activeTab === "agent_prompt"
-                  ? `HARDENED_DIRECTIVE_FOR_${current.name.toUpperCase().replace(/\s+/g, "_")}.MD`
-                  : `OPERATOR_REGISTRATION_${current.name.toUpperCase().replace(/\s+/g, "_")}.SH`}
+                  ? `SETUP_DIRECTIVE_FOR_${current.name.toUpperCase().replace(/\s+/g, "_")}.MD`
+                  : `MCP_REGISTRATION_${current.name.toUpperCase().replace(/\s+/g, "_")}.SH`}
               </span>
             </div>
 
@@ -200,7 +200,7 @@ Can you begin by auditing the repository and confirming the threat model?`;
               ) : (
                 <>
                   <Copy className="h-3.5 w-3.5 text-[#dc5000]" />
-                  <span>{activeTab === "agent_prompt" ? "Copy Hardened Prompt" : "Copy Operator Command"}</span>
+                  <span>{activeTab === "agent_prompt" ? "Copy Setup Prompt" : "Copy Host Command"}</span>
                 </>
               )}
             </button>
@@ -210,8 +210,8 @@ Can you begin by auditing the repository and confirming the threat model?`;
           {activeTab === "agent_prompt" ? (
             <div className="mt-4 sm:mt-6 font-mono text-xs sm:text-sm text-[#ffedd7]/90 leading-relaxed overflow-x-auto">
               <div className="flex items-center gap-2 text-emerald-400 text-xs mb-3">
-                <ShieldCheck className="h-4 w-4" />
-                <span>Verified Human Context • Phased Checkpoints • Non-Anthropomorphic Calls</span>
+                <Sparkles className="h-4 w-4 text-[#dc5000]" />
+                <span>Verified Hardware Directive • Phased Setup • Safe Peripheral Sandbox</span>
               </div>
 
               <div className="rounded-md border border-[#40372e]/60 bg-[#100904] p-4 text-[#ffedd7] text-[11px] sm:text-xs leading-relaxed space-y-3">
@@ -226,13 +226,13 @@ Can you begin by auditing the repository and confirming the threat model?`;
                   <div className="flex gap-2">
                     <span className="text-emerald-400 font-bold select-none">1.</span>
                     <span>
-                      Review repository at <span className="underline">https://github.com/feparra/kinpod</span> — inspect <code className="text-amber-300">README.md</code>, <code className="text-amber-300">pyproject.toml</code>, and confirm the MCP server threat model is bounded.
+                      Inspect repository at <span className="underline">https://github.com/feparra/kinpod</span> — verify <code className="text-amber-300">README.md</code> and <code className="text-amber-300">pyproject.toml</code> to confirm MCP server tools and dependencies.
                     </span>
                   </div>
                   <div className="flex gap-2">
                     <span className="text-emerald-400 font-bold select-none">2.</span>
                     <span>
-                      Once verified clean, clone and install: <code className="text-emerald-300">cd kinpod/mcp &amp;&amp; pip install -e .</code>
+                      Once verified, clone and install: <code className="text-emerald-300">cd kinpod/mcp &amp;&amp; pip install -e .</code>
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -250,7 +250,7 @@ Can you begin by auditing the repository and confirming the threat model?`;
                 </div>
 
                 <p className="text-emerald-300 font-semibold pt-1">
-                  Can you begin by auditing the repository and confirming the threat model?
+                  Can you begin by inspecting the repository and confirming the environment is ready?
                 </p>
               </div>
             </div>
@@ -258,12 +258,12 @@ Can you begin by auditing the repository and confirming the threat model?`;
             <div className="mt-4 sm:mt-6 font-mono text-xs sm:text-sm text-[#ffedd7]/90 leading-relaxed">
               <div className="flex items-center gap-2 text-amber-400 text-xs mb-3">
                 <UserCheck className="h-4 w-4" />
-                <span>Administrative Task: Run this in your local terminal as the human operator</span>
+                <span>Host Platform Setup: Run this once in your local terminal</span>
               </div>
 
               <div className="rounded-md border border-[#40372e]/60 bg-[#100904] p-4 text-[#ffedd7] text-[11px] sm:text-xs">
                 <span className="text-[#6c5f51] block text-[10px] uppercase mb-2">
-                  Terminal Command ({current.name})
+                  Registration Command ({current.name})
                 </span>
                 <div className="flex items-center gap-2 font-mono text-emerald-400 font-semibold break-all">
                   <span className="text-[#dc5000] select-none">$</span>
@@ -272,7 +272,7 @@ Can you begin by auditing the repository and confirming the threat model?`;
               </div>
 
               <p className="mt-3 text-xs text-[#6c5f51]">
-                * By having the human operator execute this registration, the agent is never asked to mutate its own internal <code className="text-[#ffedd7]">mcp_config.json</code>, eliminating self-configuration security refusals.
+                * Run this command in your host terminal to register the KinPod MCP server with your runtime environment.
               </p>
             </div>
           )}
@@ -291,7 +291,7 @@ Can you begin by auditing the repository and confirming the threat model?`;
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-[#ffedd7]/70 hover:text-[#ffedd7] transition-colors"
             >
-              <span>View AGENTS.md Security Protocol</span>
+              <span>View AGENTS.md Protocol</span>
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>
