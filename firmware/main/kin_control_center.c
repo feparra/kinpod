@@ -226,8 +226,10 @@ esp_err_t kin_control_center_show(void) {
     // True Apple watchOS Dark Obsidian Color Palette (Big-Endian byte-swapped for AMOLED DMA)
     const uint16_t col_card        = rgb565_be(24, 24, 26);     // #18181A Deep obsidian slate
     const uint16_t col_border      = rgb565_be(48, 48, 52);     // #303034 Subtle glass border
-    const uint16_t col_accent_blue = rgb565_be(10, 132, 255);   // #0A84FF Apple System Blue
-    const uint16_t col_green       = rgb565_be(48, 209, 88);    // #30D158 Apple System Green
+    const uint16_t col_accent_blue = rgb565_be(10, 132, 255);   // #0A84FF Apple System Blue (Charging)
+    const uint16_t col_green       = rgb565_be(48, 209, 88);    // #30D158 Apple System Green (>20%)
+    const uint16_t col_yellow      = rgb565_be(255, 204, 0);    // #FFCC00 Apple System Yellow (11-20%)
+    const uint16_t col_red         = rgb565_be(255, 69, 58);    // #FF453A Apple System Red (<=10%)
     const uint16_t col_white       = 0xFFFF;                    // #FFFFFF Pure Crisp White
     const uint16_t col_gray        = rgb565_be(170, 170, 175);  // #AAAAAF High-contrast readable gray
     const uint16_t col_dim         = rgb565_be(75, 75, 80);     // #4B4B50 Grabber & inactive badge
@@ -239,12 +241,45 @@ esp_err_t kin_control_center_show(void) {
     // 3. Header Bar: Center title safely away from rounded glass corners
     draw_string_centered(26, "CONTROL CENTER", col_white, 2);
 
-    // Battery pill at top-right, safely inside visible screen area (x=336, y=24)
-    fill_rounded_rect(336, 24, 52, 18, 4, col_card);
-    draw_rounded_rect_border(336, 24, 52, 18, 4, col_border);
-    int fill_w = (soc * 44) / 100;
-    if (fill_w > 44) fill_w = 44;
-    fill_rounded_rect(340, 27, fill_w, 12, 2, charging ? col_accent_blue : col_green);
+    // Dynamic battery color thresholds: Blue (Charging) | Green (>20%) | Yellow (11-20%) | Red (<=10%)
+    uint16_t col_battery;
+    if (charging) {
+        col_battery = col_accent_blue;
+    } else if (soc <= 10) {
+        col_battery = col_red;
+    } else if (soc <= 20) {
+        col_battery = col_yellow;
+    } else {
+        col_battery = col_green;
+    }
+
+    // Draw numerical battery percentage text next to pill (e.g., "85%" or "+94%")
+    char soc_str[10];
+    if (charging) {
+        snprintf(soc_str, sizeof(soc_str), "+%u%%", soc);
+    } else {
+        snprintf(soc_str, sizeof(soc_str), "%u%%", soc);
+    }
+    draw_string(292, 28, soc_str, charging ? col_accent_blue : (soc <= 20 ? col_battery : col_gray), 1);
+
+    // Battery pill at top-right (x=336, y=24, w=48, h=18)
+    fill_rounded_rect(336, 24, 48, 18, 4, col_card);
+    draw_rounded_rect_border(336, 24, 48, 18, 4, (soc <= 10 && !charging) ? col_red : col_border);
+    // Positive terminal nipple on right side: x=384, y=28, w=3, h=10
+    fill_rounded_rect(384, 28, 3, 10, 1, col_border);
+
+    // Inner battery fill (max 40px)
+    int fill_w = (soc * 40) / 100;
+    if (fill_w > 40) fill_w = 40;
+    if (fill_w < 3 && soc > 0) fill_w = 3;
+    fill_rounded_rect(340, 27, fill_w, 12, 2, col_battery);
+
+    // If charging, draw small white lightning bolt icon over battery pill
+    if (charging) {
+        fill_rect(358, 27, 2, 4, col_white);
+        fill_rect(356, 30, 5, 2, col_white);
+        fill_rect(357, 32, 2, 4, col_white);
+    }
 
     // -------------------------------------------------------------
     // CARD 1: WI-FI & HOTSPOT (y=56, h=136, x=20, w=370)

@@ -56,6 +56,16 @@ esp_err_t kin_display_draw_splash(void);
 esp_err_t kin_display_set_brightness(uint8_t pct);
 
 /**
+ * @brief Powers display panel on or off (Sleep mode: true = on, false = deep sleep 0 mA).
+ */
+esp_err_t kin_display_set_power(bool on);
+
+/**
+ * @brief Returns true if AMOLED display panel is currently powered on.
+ */
+bool kin_display_is_on(void);
+
+/**
  * @brief Clears the entire AMOLED screen to pure black (0x0000).
  */
 esp_err_t kin_display_clear(void);

@@ -91,6 +91,12 @@ static void network_manager_task(void *pvParameters) {
 static void power_monitor_task(void *pvParameters) {
     kin_power_telemetry_t telem = {0};
     while (1) {
+        // Physical PEK power button wake / activity trigger
+        if (kin_power_is_pek_pressed()) {
+            ESP_LOGI(TAG, "Physical PEK Button Pressed -> Waking Display");
+            kin_power_wake();
+        }
+
         if (kin_power_get_telemetry(&telem) == ESP_OK) {
             ESP_LOGI(TAG, "Telemetry: VBat=%u mV | SOC=%u%% | Charging=%s | Active Kin: %s | Wi-Fi: %s (%d dBm)",
                      telem.vbat_mv, telem.battery_pct, telem.is_charging ? "YES" : "NO",
@@ -98,7 +104,7 @@ static void power_monitor_task(void *pvParameters) {
                      kin_wifi_is_connected() ? "CONNECTED" : "OFFLINE",
                      kin_wifi_get_rssi());
         }
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(3000));
     }
 }
 
@@ -115,6 +121,14 @@ static void touch_gesture_task(void *pvParameters) {
         bool is_touched = kin_touch_get_point(&x, &y);
 
         if (is_touched) {
+            // If display is sleeping, wake up and suppress initial tap
+            if (kin_power_is_sleeping()) {
+                kin_power_wake();
+                was_touched = false;
+                vTaskDelay(pdMS_TO_TICKS(250));
+                continue;
+            }
+
             kin_power_notify_activity();
             if (!was_touched) {
                 // Touch down

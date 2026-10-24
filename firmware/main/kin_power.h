@@ -40,6 +40,15 @@ typedef struct {
 } kin_power_telemetry_t;
 
 /**
+ * @brief Power management sleep states.
+ */
+typedef enum {
+    KIN_SLEEP_STATE_ACTIVE = 0, /*!< Display at 100% brightness */
+    KIN_SLEEP_STATE_DIMMED,     /*!< Display dimmed to 20% for battery saving */
+    KIN_SLEEP_STATE_SLEEPING    /*!< Display completely powered down (0 mA true-black AMOLED) */
+} kin_sleep_state_t;
+
+/**
  * @brief Initializes AXP2101 PMU, verifies chip ID, and activates ALDO2 @ 3.3V.
  */
 esp_err_t kin_power_init(void);
@@ -62,20 +71,35 @@ bool kin_power_is_pek_pressed(void);
 
 /**
  * @brief Notifies the power management system of user activity (touch, button, speech).
- * Resets the inactivity timer and restores 100% brightness if dimmed.
+ * Resets the inactivity timer and restores 100% brightness if dimmed/sleeping.
  */
 void kin_power_notify_activity(void);
 
 /**
- * @brief Initializes the power management auto-dimming task.
- * Dims display to 15% brightness after 30 seconds of inactivity.
+ * @brief Wakes up display immediately from sleep or dim state.
+ */
+void kin_power_wake(void);
+
+/**
+ * @brief Initializes the power management auto-dimming and sleep task.
+ * Dims display to 20% after 20s, and powers off display after 40s of inactivity.
  */
 esp_err_t kin_power_management_init(void);
 
 /**
- * @brief Returns true if the display is currently dimmed.
+ * @brief Returns true if the display is currently dimmed or sleeping.
  */
 bool kin_power_is_dimmed(void);
+
+/**
+ * @brief Returns true if the display is currently in full sleep mode (panel off).
+ */
+bool kin_power_is_sleeping(void);
+
+/**
+ * @brief Gets current power management sleep state.
+ */
+kin_sleep_state_t kin_power_get_sleep_state(void);
 
 #ifdef __cplusplus
 }

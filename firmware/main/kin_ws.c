@@ -35,7 +35,6 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
             s_is_connected = false;
             break;
         case WEBSOCKET_EVENT_DATA:
-            kin_power_notify_activity();
             if (data->op_code == 0x01) { // Text JSON frame
                 char *json_str = (char *)malloc(data->data_len + 1);
                 if (json_str) {
@@ -46,6 +45,7 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
                         cJSON *evt = cJSON_GetObjectItem(root, "event");
                         if (evt && evt->valuestring) {
                             if (strcmp(evt->valuestring, "reply") == 0) {
+                                kin_power_notify_activity(); // Wake screen to display speaking agent
                                 cJSON *text = cJSON_GetObjectItem(root, "text");
                                 cJSON *trans = cJSON_GetObjectItem(root, "transcript");
                                 ESP_LOGI(TAG, ">>> Agent [%s] Response: \"%s\" (Transcript: \"%s\") <<<",

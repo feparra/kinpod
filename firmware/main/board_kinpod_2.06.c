@@ -63,11 +63,34 @@ esp_err_t kin_display_init(void) {
     return ESP_OK;
 }
 
+static bool s_display_powered_on = true;
+
 esp_err_t kin_display_set_brightness(uint8_t pct) {
     if (s_panel_handle == NULL) {
         return ESP_ERR_INVALID_STATE;
     }
     return bsp_display_brightness_set(pct);
+}
+
+esp_err_t kin_display_set_power(bool on) {
+    if (s_panel_handle == NULL) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    s_display_powered_on = on;
+    if (!on) {
+        kin_display_set_brightness(0);
+        esp_lcd_panel_disp_on_off(s_panel_handle, false);
+        ESP_LOGI(TAG, "AMOLED Display Powered DOWN [Sleep Mode Active, 0 mA]");
+    } else {
+        esp_lcd_panel_disp_on_off(s_panel_handle, true);
+        kin_display_set_brightness(100);
+        ESP_LOGI(TAG, "AMOLED Display Powered UP [Active Mode]");
+    }
+    return ESP_OK;
+}
+
+bool kin_display_is_on(void) {
+    return s_display_powered_on;
 }
 
 esp_err_t kin_display_clear(void) {
