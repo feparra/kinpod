@@ -213,14 +213,33 @@ async def synthesize_pcm16k(text: str, voice: str = "onyx") -> bytes:
         import miniaudio
 
         voice_map = {
+            # Spanish
             "onyx": "es-AR-TomasNeural",
             "alloy": "es-AR-TomasNeural",
             "echo": "es-ES-AlvaroNeural",
             "shimmer": "es-AR-ElenaNeural",
             "nova": "es-AR-ElenaNeural",
             "fable": "es-ES-AlvaroNeural",
+            "spanish": "es-AR-TomasNeural",
+            "es": "es-AR-TomasNeural",
+            # English
+            "english": "en-US-GuyNeural",
+            "en": "en-US-GuyNeural",
+            "en-us": "en-US-GuyNeural",
+            "guy": "en-US-GuyNeural",
+            "brian": "en-US-BrianNeural",
+            "andrew": "en-US-AndrewNeural",
+            "ava": "en-US-AvaNeural",
+            "jenny": "en-US-JennyNeural",
+            "aria": "en-US-AriaNeural",
         }
-        edge_voice = voice_map.get(voice.lower(), "es-AR-TomasNeural")
+        v_lower = voice.lower().strip()
+        if "-" in voice and len(voice) >= 7:
+            edge_voice = voice
+        elif v_lower in voice_map:
+            edge_voice = voice_map[v_lower]
+        else:
+            edge_voice = "es-AR-TomasNeural"
 
         communicate = edge_tts.Communicate(text, edge_voice)
         mp3_buf = bytearray()
