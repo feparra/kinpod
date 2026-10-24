@@ -183,8 +183,12 @@ async def process_kin_interaction(wav_bytes: bytes, kin_id: str) -> tuple[str, s
 async def synthesize_pcm16k(text: str, voice: str = "onyx") -> bytes:
     """
     Synthesizes speech to 16 kHz 16-bit Mono PCM for direct I2S0 DMA playback on ES8311.
-    If no OpenAI key is set, generates an alternating square audio chime.
+    Order of preference:
+    1. OpenAI TTS (if OPENAI_API_KEY is configured)
+    2. Edge-TTS neural high-fidelity voice (Free, zero API key required, natural Spanish/English)
+    3. Fallback sine wave confirmation tone (440Hz)
     """
+    # 1. OpenAI TTS
     if OPENAI_API_KEY:
         try:
             async with httpx.AsyncClient(timeout=25.0) as client:
@@ -201,9 +205,41 @@ async def synthesize_pcm16k(text: str, voice: str = "onyx") -> bytes:
                         pcm_16k.extend(raw_24k[i * 2 : i * 2 + 4])
                     return bytes(pcm_16k)
         except Exception as e:
-            logger.warning(f"TTS synthesis warning: {e}")
+            logger.warning(f"OpenAI TTS synthesis warning: {e}")
 
-    # Fallback: Synthetic 16kHz confirmation chime (440Hz tone, 0.4s)
+    # 2. Edge-TTS Neural Synthesis (Zero-config, free, high quality)
+    try:
+        import edge_tts
+        import miniaudio
+
+        voice_map = {
+            "onyx": "es-AR-TomasNeural",
+            "alloy": "es-AR-TomasNeural",
+            "echo": "es-ES-AlvaroNeural",
+            "shimmer": "es-AR-ElenaNeural",
+            "nova": "es-AR-ElenaNeural",
+            "fable": "es-ES-AlvaroNeural",
+        }
+        edge_voice = voice_map.get(voice.lower(), "es-AR-TomasNeural")
+
+        communicate = edge_tts.Communicate(text, edge_voice)
+        mp3_buf = bytearray()
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                mp3_buf.extend(chunk["data"])
+
+        if mp3_buf:
+            decoded = miniaudio.decode(
+                bytes(mp3_buf),
+                nchannels=1,
+                sample_rate=16000,
+                output_format=miniaudio.SampleFormat.SIGNED16
+            )
+            return decoded.samples.tobytes()
+    except Exception as e:
+        logger.warning(f"Edge-TTS synthesis warning: {e}")
+
+    # 3. Fallback: Synthetic 16kHz confirmation chime (440Hz tone, 0.4s)
     import math
     import struct
     sample_rate = 16000

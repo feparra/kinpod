@@ -347,8 +347,12 @@ esp_err_t kin_avatar_set_active(kin_avatar_id_t id) {
     // 1. Draw base 410x502 screen
     esp_err_t err = kin_display_draw_raw_frame(p->raw_asset_start);
 
-    // 2. Preload active character frames from SPIFFS into PSRAM
-    kin_avatar_load_sprites_for_active();
+    // 2. Preload active character frames from SPIFFS into PSRAM (only on actual avatar change)
+    static kin_avatar_id_t s_last_loaded_avatar = (kin_avatar_id_t)-1;
+    if (s_last_loaded_avatar != id) {
+        kin_avatar_load_sprites_for_active();
+        s_last_loaded_avatar = id;
+    }
 
     // 3. Draw initial idle sprite (240x240)
     if (s_active_sprites[0]) {

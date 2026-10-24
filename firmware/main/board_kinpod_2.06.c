@@ -93,31 +93,36 @@ bool kin_display_is_on(void) {
     return s_display_powered_on;
 }
 
+static uint8_t *s_frame_dma_buf = NULL;
+#define FRAME_CHUNK_LINES 20 // 410 * 20 * 2 = 16,400 bytes (fits in internal DMA RAM reliably)
+
 esp_err_t kin_display_clear(void) {
     if (s_panel_handle == NULL) {
         return ESP_ERR_INVALID_STATE;
     }
 
-    const int chunk_height = 50;
-    size_t chunk_size = KIN_LCD_H_RES * chunk_height * sizeof(uint16_t);
-    uint16_t *line_buf = (uint16_t *)heap_caps_malloc(chunk_size, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-    if (!line_buf) {
-        line_buf = (uint16_t *)malloc(chunk_size);
-    }
-    if (!line_buf) {
-        return ESP_ERR_NO_MEM;
-    }
-    memset(line_buf, 0x00, chunk_size);
+    const size_t line_bytes = KIN_LCD_H_RES * sizeof(uint16_t);
+    const size_t chunk_bytes = line_bytes * FRAME_CHUNK_LINES;
 
-    for (int y = 0; y < KIN_LCD_V_RES; y += chunk_height) {
-        int h = (y + chunk_height <= KIN_LCD_V_RES) ? chunk_height : (KIN_LCD_V_RES - y);
-        esp_lcd_panel_draw_bitmap(s_panel_handle, 0, y, KIN_LCD_H_RES, y + h, line_buf);
+    if (!s_frame_dma_buf) {
+        s_frame_dma_buf = (uint8_t *)heap_caps_malloc(chunk_bytes, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
+        if (!s_frame_dma_buf) {
+            s_frame_dma_buf = (uint8_t *)malloc(chunk_bytes);
+        }
+        if (!s_frame_dma_buf) {
+            return ESP_ERR_NO_MEM;
+        }
+    }
+    memset(s_frame_dma_buf, 0x00, chunk_bytes);
+
+    for (int y = 0; y < KIN_LCD_V_RES; y += FRAME_CHUNK_LINES) {
+        int h = (y + FRAME_CHUNK_LINES <= KIN_LCD_V_RES) ? FRAME_CHUNK_LINES : (KIN_LCD_V_RES - y);
+        esp_lcd_panel_draw_bitmap(s_panel_handle, 0, y, KIN_LCD_H_RES, y + h, s_frame_dma_buf);
         if (s_trans_done_sem) {
             xSemaphoreTake(s_trans_done_sem, pdMS_TO_TICKS(100));
         }
     }
 
-    free(line_buf);
     return ESP_OK;
 }
 
@@ -178,37 +183,37 @@ esp_err_t kin_display_draw_raw_frame(const uint8_t *raw_frame) {
         return ESP_ERR_INVALID_ARG;
     }
 
-    const int chunk_lines = 50;
     const size_t line_bytes = KIN_LCD_H_RES * sizeof(uint16_t);
-    const size_t chunk_bytes = line_bytes * chunk_lines;
+    const size_t chunk_bytes = line_bytes * FRAME_CHUNK_LINES;
 
-    // Allocate single DMA-capable RAM transfer buffer
-    uint8_t *dma_buf = (uint8_t *)heap_caps_malloc(chunk_bytes, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-    if (!dma_buf) {
-        dma_buf = (uint8_t *)malloc(chunk_bytes);
-    }
-    if (!dma_buf) {
-        ESP_LOGE(TAG, "Failed to allocate DMA buffer for frame transfer");
-        return ESP_ERR_NO_MEM;
+    // Use persistent DMA buffer in internal RAM
+    if (!s_frame_dma_buf) {
+        s_frame_dma_buf = (uint8_t *)heap_caps_malloc(chunk_bytes, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
+        if (!s_frame_dma_buf) {
+            s_frame_dma_buf = (uint8_t *)malloc(chunk_bytes);
+        }
+        if (!s_frame_dma_buf) {
+            ESP_LOGE(TAG, "Failed to allocate DMA buffer for frame transfer");
+            return ESP_ERR_NO_MEM;
+        }
     }
 
-    for (int y = 0; y < KIN_LCD_V_RES; y += chunk_lines) {
-        int h = (y + chunk_lines <= KIN_LCD_V_RES) ? chunk_lines : (KIN_LCD_V_RES - y);
+    for (int y = 0; y < KIN_LCD_V_RES; y += FRAME_CHUNK_LINES) {
+        int h = (y + FRAME_CHUNK_LINES <= KIN_LCD_V_RES) ? FRAME_CHUNK_LINES : (KIN_LCD_V_RES - y);
         size_t current_chunk_size = h * line_bytes;
 
         // Copy chunk from embedded flash image into DMA RAM
-        memcpy(dma_buf, raw_frame + (y * line_bytes), current_chunk_size);
+        memcpy(s_frame_dma_buf, raw_frame + (y * line_bytes), current_chunk_size);
 
         // Send to AMOLED via QSPI
-        esp_lcd_panel_draw_bitmap(s_panel_handle, 0, y, KIN_LCD_H_RES, y + h, dma_buf);
+        esp_lcd_panel_draw_bitmap(s_panel_handle, 0, y, KIN_LCD_H_RES, y + h, s_frame_dma_buf);
 
-        // Synchronize: wait until hardware DMA completes before copying next chunk or freeing
+        // Synchronize: wait until hardware DMA completes before copying next chunk
         if (s_trans_done_sem) {
             xSemaphoreTake(s_trans_done_sem, pdMS_TO_TICKS(100));
         }
     }
 
-    free(dma_buf);
     return ESP_OK;
 }
 
