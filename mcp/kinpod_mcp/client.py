@@ -11,7 +11,7 @@ import httpx
 logger = logging.getLogger("KinPodClient")
 
 class KinPodClient:
-    def __init__(self, base_url: str = "http://127.0.0.1:8000"):
+    def __init__(self, base_url: str = "https://agent.thekinpod.com"):
         self.base_url = base_url.rstrip("/")
 
     async def get_status(self) -> Dict[str, Any]:

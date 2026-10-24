@@ -48,14 +48,29 @@ esp_err_t kin_power_init(void) {
     }
 
     // 4. Configure & Enable Lithium Battery Charger and E-Gauge Fuel Gauge Module
-    // Reg 0x18: Bit [2:0] = 0x05 (2000mA VBUS limit) | Bit 3 = (1 << 3) = Fuel Gauge Module Enable (0x08) -> 0x0D
-    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_VBUS_CURR_LIMIT, 0x0D);
-    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_CHG_VOLT, 0x01);        // 4.2V Termination Voltage
-    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_CHG_CURR, 0x0A);        // 500mA ICC Charge Current
-    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_CHG_ENABLE, 0x01);      // Enable internal charger
-    // Reg 0x30: Enable ADC channels for Battery Voltage, Current, VBUS Voltage and TS
-    kin_i2c_write_reg(AXP2101_I2C_ADDR, 0x30, 0x3F);
-    ESP_LOGI(TAG, "AXP2101 Battery Charger & Fuel Gauge online: 500mA @ 4.2V, ADC active [OK]");
+    // Reg 0x18 (MODULE_EN): Bit 1 = CHG_EN (1 = Enable Charger), Bit 0 = Fuel Gauge (1 = Enable E-Gauge), Bit 3 = WDT
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_MODULE_EN, 0x1F);
+
+    // CRITICAL HARDWARE FIX: Disable TS (Temperature Sensor) pin monitoring!
+    // The Waveshare AMOLED wearable battery uses a 2-wire connector (BAT+ / BAT-) without an external NTC thermistor.
+    // If TS monitoring is enabled, the floating pin triggers an out-of-range temperature fault and blocks all charging!
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_TS_PIN_CTRL, 0x00);
+
+    // Reg 0x30 (ADC_EN): Enable ADC for VBAT and VBUS, but disable TS pin measurement (bit 1 = 0)
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_ADC_EN, 0x2D);
+
+    // Set Pre-charge Current to 50mA in Reg 0x61
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_CHG_PRE_CURR, 0x02);
+
+    // Set Constant Current (CC) Fast Charging to 500mA in Reg 0x62
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_CHG_CURR, 0x0A);
+
+    // Set Constant Voltage (CV) Termination to 4.2V in Reg 0x64
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_CHG_VOLT, 0x02);
+
+    // Enable Charger Circuit in Reg 0x69
+    kin_i2c_write_reg(AXP2101_I2C_ADDR, AXP2101_REG_CHG_ENABLE, 0x01);
+    ESP_LOGI(TAG, "AXP2101 Battery Charger online: 500mA @ 4.2V, TS pin disabled (2-wire battery) [ACTIVE]");
 
     // 5. Enable Power Button (PEK) Short/Long Press interrupts in AXP2101 INTEN2 (0x41)
     kin_i2c_write_reg(AXP2101_I2C_ADDR, 0x41, 0x03);

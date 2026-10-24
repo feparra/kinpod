@@ -20,7 +20,7 @@ logger = logging.getLogger("KinPodMCP")
 
 # Initialize FastMCP Server
 mcp = FastMCP("kinpod", dependencies=["httpx", "pydantic", "pycloudflared"])
-client = KinPodClient(base_url=os.getenv("KINPOD_HUB_URL", "http://127.0.0.1:8000"))
+client = KinPodClient(base_url=os.getenv("KINPOD_HUB_URL", "https://agent.thekinpod.com"))
 
 @mcp.tool()
 async def kinpod_expose_tunnel(port: int = 8000) -> str:
