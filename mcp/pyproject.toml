@@ -5,15 +5,33 @@ build-backend = "hatchling.build"
 [project]
 name = "kinpod-mcp"
 version = "0.1.0"
-description = "Model Context Protocol (MCP) server for KinPod Universal AI Companion Hardware"
+description = "Model Context Protocol (MCP) server for KinPod Wearable AI Hardware"
 readme = "README.md"
-authors = [{ name = "KinPod Community" }]
+license = { text = "MIT" }
+authors = [{ name = "KinPod Team", email = "dev@thekinpod.com" }]
 requires-python = ">=3.10"
+keywords = ["mcp", "agent-embodiment", "wearable", "openclaw", "claude-code", "esp32-s3", "hardware-security"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Hardware",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "mcp>=1.0.0",
     "httpx>=0.27.0",
     "pydantic>=2.0.0"
 ]
+
+[project.urls]
+Homepage = "https://thekinpod.com"
+Repository = "https://github.com/feparra/kinpod"
+Documentation = "https://github.com/feparra/kinpod/tree/master/mcp"
 
 [project.scripts]
 kinpod-mcp = "kinpod_mcp.server:main"

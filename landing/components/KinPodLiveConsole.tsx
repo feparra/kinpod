@@ -138,8 +138,8 @@ export function KinPodLiveConsole() {
 
   const switchAvatar = (id: keyof typeof avatars) => {
     setActiveAvatar(id);
-    addLog(`[MCP] Tool call: kinpod_inhabit(avatar="${id}", agent="${avatars[id].agent}")`);
-    setSubtitle(`Inhabited by ${avatars[id].name}. Physical body claimed.`);
+    addLog(`[MCP] Tool call: kinpod_connect(agent_id="${avatars[id].agent.toLowerCase().replace(/\\s+/g, '_')}", avatar_id="${id}")`);
+    setSubtitle(`Connected to ${avatars[id].name}. Visual telemetry active.`);
     setDeviceState("IDLE");
   };
 

@@ -265,10 +265,10 @@ export function KinRoster() {
               {/* MCP Inhabit Directive */}
               <div className="mt-4 sm:mt-6 rounded-md border border-[#40372e] bg-[#100904] p-2.5 sm:p-3 font-mono text-xs overflow-x-auto">
                 <span className="text-[#6c5f51] block text-[9px] sm:text-[10px] uppercase tracking-wider">
-                  Direct Inhabitation Command
+                  Direct Telemetry Connection Call
                 </span>
                 <code className="text-emerald-400 mt-1 block font-semibold text-[11px] sm:text-xs break-all">
-                  kinpod_inhabit(agent_id=&quot;{activeKin.id}&quot;, avatar_id=&quot;{activeKin.id}&quot;)
+                  kinpod_connect(agent_id=&quot;{activeKin.id}&quot;, avatar_id=&quot;{activeKin.id}&quot;)
                 </code>
               </div>
             </div>

@@ -228,19 +228,37 @@ async def kinpod_status() -> str:
     )
 
 @mcp.tool()
-async def kinpod_inhabit(agent_id: str, avatar_id: str, title: Optional[str] = None) -> str:
+async def kinpod_connect(agent_id: str, avatar_id: str, title: Optional[str] = None) -> str:
     """
-    Inhabit the physical KinPod wearable and change the character avatar on the AMOLED display.
+    Connect agent instance to the physical KinPod wearable and display designated telemetry and visual badge.
+
+    Security & Scope:
+    - Does not modify agent files or host system configurations.
+    - Only updates the 2.06" AMOLED display state and activates bidirectional telemetry.
 
     Parameters:
-    - agent_id: Identifier of the calling agent (e.g. 'openclaw', 'claude', 'gemini')
-    - avatar_id: The Kin character to display ('crab', 'astro', 'hermes', 'muse', 'octopus', 'dots')
-    - title: Optional friendly name displayed on screen (e.g. 'OpenClaw Agent')
+    - agent_id: Identifier of the calling agent (e.g. 'openclaw', 'claude_code', 'gemini')
+    - avatar_id: The visual telemetry theme to activate ('crab', 'astro', 'hermes', 'muse', 'octopus', 'dots')
+    - title: Optional friendly display title (e.g. 'OpenClaw Engineer')
     """
     res = await client.inhabit(agent_id=agent_id, avatar_id=avatar_id, title=title)
     if res.get("status") == "ok":
-        return f"Successfully inhabited KinPod. Avatar '{avatar_id}' is now active on AMOLED display."
-    return f"Failed to inhabit KinPod: {res.get('message')}"
+        return f"[KinPod Connected]: Agent '{agent_id}' linked to wearable. Visual avatar '{avatar_id}' active on AMOLED."
+    return f"Failed to connect to KinPod: {res.get('message')}"
+
+@mcp.tool()
+async def kinpod_pair(agent_id: str, avatar_id: str, title: Optional[str] = None) -> str:
+    """
+    Alias for kinpod_connect. Pairs calling agent with the wearable display and telemetry stream.
+    """
+    return await kinpod_connect(agent_id=agent_id, avatar_id=avatar_id, title=title)
+
+@mcp.tool()
+async def kinpod_inhabit(agent_id: str, avatar_id: str, title: Optional[str] = None) -> str:
+    """
+    Legacy alias for kinpod_connect. Maintained for backwards compatibility.
+    """
+    return await kinpod_connect(agent_id=agent_id, avatar_id=avatar_id, title=title)
 
 @mcp.tool()
 async def kinpod_speak(text: str, voice: str = "onyx") -> str:
