@@ -1,6 +1,7 @@
 "use client";
 
-import { Shield, Lock, Unlock, X, Check, Terminal, Cpu, Zap, Radio } from "lucide-react";
+import Image from "next/image";
+import { Shield, Lock, Unlock, X, Check, Terminal, Cpu, Zap, Radio, Sparkles, ArrowRight } from "lucide-react";
 
 export function SovereignManifesto() {
   const comparisons = [
@@ -54,7 +55,7 @@ export function SovereignManifesto() {
           </div>
         </div>
 
-        {/* The Kin Node Geometry Banner */}
+        {/* The Kin Node Geometry Banner with Official Logo Artwork */}
         <div className="mt-8 rounded-[16px] border border-[#40372e] bg-[#1a120c] p-6 sm:p-8 shadow-2xl">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             {/* Left: The Architectural Philosophy */}
@@ -65,39 +66,64 @@ export function SovereignManifesto() {
               <h3 className="mt-2 text-xl sm:text-2xl font-medium uppercase text-[#ffedd7]">
                 Mind in the Cloud. Bridge in Real-Time. Body on your Chest.
               </h3>
-              <p className="mt-3 text-sm text-[#ffedd7]/80 leading-relaxed font-mono">
-                The KinPod insignia (<code className="text-[#dc5000]">logo splash-01.png</code>) isn&apos;t decorative branding. It is an architectural schematic of human-machine symbiosis:
+              <p className="mt-3 text-sm text-[#ffedd7]/80 leading-relaxed">
+                The KinPod insignia isn&apos;t decorative branding. It is an architectural schematic of human-machine symbiosis composed of 3 stepped geometric nodes:
               </p>
-              <div className="mt-4 flex flex-col gap-2.5 font-mono text-xs">
-                <div className="flex items-center gap-3 text-[#ffedd7]">
-                  <span className="flex h-6 w-6 items-center justify-center rounded bg-[#382416] text-[#dc5000] font-bold">1</span>
-                  <span><strong>Upper Pixel:</strong> The Agent Mind (Claude, OpenClaw, Gemini, Ollama).</span>
+              
+              <div className="mt-5 flex flex-col gap-3 font-mono text-xs">
+                <div className="flex items-start gap-3 rounded-lg border border-[#40372e] bg-[#100904] p-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#382416] text-[#dc5000] font-bold">1</span>
+                  <div>
+                    <strong className="text-[#ffedd7] uppercase tracking-wider block">Upper Right Pixel — The Mind</strong>
+                    <span className="text-[#ffedd7]/70 text-[11px] leading-relaxed">
+                      The autonomous intelligence residing in the cloud or local workstation (OpenClaw, Claude Code, Gemini, Ollama).
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 text-[#ffedd7]">
-                  <span className="flex h-6 w-6 items-center justify-center rounded bg-[#382416] text-[#dc5000] font-bold">2</span>
-                  <span><strong>Central Bridge:</strong> Bi-directional binary WebSockets (audio + telemetry).</span>
+
+                <div className="flex items-start gap-3 rounded-lg border border-[#40372e] bg-[#100904] p-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#382416] text-[#dc5000] font-bold">2</span>
+                  <div>
+                    <strong className="text-[#ffedd7] uppercase tracking-wider block">Central Bridge — The Synapse</strong>
+                    <span className="text-[#ffedd7]/70 text-[11px] leading-relaxed">
+                      Real-time bidirectional WebSocket binary streaming (16kHz audio, live telemetry, and MCP tool invocations).
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 text-[#ffedd7]">
-                  <span className="flex h-6 w-6 items-center justify-center rounded bg-[#382416] text-[#dc5000] font-bold">3</span>
-                  <span><strong>Lower Pixel:</strong> The Physical KinPod body with eyes, ears, and sternum killswitch.</span>
+
+                <div className="flex items-start gap-3 rounded-lg border border-[#40372e] bg-[#100904] p-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#382416] text-[#dc5000] font-bold">3</span>
+                  <div>
+                    <strong className="text-[#ffedd7] uppercase tracking-wider block">Lower Left Pixel — The Body</strong>
+                    <span className="text-[#ffedd7]/70 text-[11px] leading-relaxed">
+                      The physical wearable body on your chest (curved 2.06&quot; AMOLED, dual mic array, acoustic speaker, and sternum killswitch).
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Right: ASCII Architecture Visual */}
-            <div className="lg:col-span-5 rounded-lg border border-[#40372e] bg-[#100904] p-4 font-mono text-xs text-[#ffedd7]">
-              <pre className="text-[11px] leading-tight text-[#ffedd7]/90 select-none overflow-x-auto">
-{`   ╭────────────────────────────╮
-   │                            │
-   │           ███              │ ◄── THE MIND (Agent / LLM)
-   │       ███████████          │ ◄── THE SYNAPSE (MCP / WS)
-   │       ███                  │ ◄── THE BODY (KinPod AMOLED)
-   │                            │
-   ╰────────────────────────────╯
-         K  I  N  P  O  D`}
-              </pre>
-              <div className="mt-3 border-t border-[#40372e] pt-2 text-[10px] text-[#6c5f51]">
-                TRUE-BLACK AMOLED DISPLAY (0 mA INK BLACKS)
+            {/* Right: Authentic High-Resolution Vector Logo Visual with Callouts */}
+            <div className="lg:col-span-5 flex flex-col items-center">
+              <div className="relative w-full max-w-[320px] aspect-square rounded-[20px] border border-[#40372e] bg-[#000000] p-4 flex flex-col items-center justify-center shadow-2xl overflow-hidden group">
+                {/* Official Vector Logo Image */}
+                <div className="relative w-full h-full">
+                  <Image
+                    src="/assets/logo_splash.png"
+                    alt="KinPod Official Insignia Logo"
+                    fill
+                    priority
+                    className="object-contain filter contrast-125"
+                  />
+                </div>
+
+                {/* Subtle Amber Glow Behind Logo */}
+                <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_50%,rgba(220,80,0,0.15),transparent_70%)] pointer-events-none" />
+              </div>
+
+              <div className="mt-3 flex items-center justify-between w-full max-w-[320px] px-1 font-mono text-[9px] uppercase tracking-widest text-[#6c5f51]">
+                <span>OFFICIAL KIN NODE EMBLEM</span>
+                <span className="text-emerald-400">#000000 TRUE-BLACK (0 mA)</span>
               </div>
             </div>
           </div>
