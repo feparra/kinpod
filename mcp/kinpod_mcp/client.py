@@ -88,3 +88,34 @@ class KinPodClient:
                 return {"status": "error", "message": f"HTTP {resp.status_code}"}
             except Exception as e:
                 return {"status": "error", "message": str(e)}
+
+    async def listen(self, timeout_sec: int = 30, allow_recent_sec: int = 5) -> Dict[str, Any]:
+        """
+        Blocks and waits for the wearer to press Push-To-Talk on KinPod and speak.
+        Returns a dict with 'status' ('heard', 'timeout', or 'error') and 'transcript'.
+        """
+        payload = {
+            "timeout_sec": timeout_sec,
+            "allow_recent_sec": allow_recent_sec
+        }
+        async with httpx.AsyncClient(timeout=float(timeout_sec + 5)) as client:
+            try:
+                resp = await client.post(f"{self.base_url}/api/listen", json=payload)
+                if resp.status_code == 200:
+                    return resp.json()
+                return {"status": "error", "message": f"HTTP {resp.status_code}: {resp.text}"}
+            except httpx.TimeoutException:
+                return {"status": "timeout", "message": f"Timed out waiting for speech after {timeout_sec}s."}
+            except Exception as e:
+                return {"status": "error", "message": str(e)}
+
+    async def get_last_speech(self) -> Dict[str, Any]:
+        """Fetch the most recent speech transcript from KinPod without waiting."""
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            try:
+                resp = await client.get(f"{self.base_url}/api/speech/last")
+                if resp.status_code == 200:
+                    return resp.json()
+                return {"status": "none", "transcript": None}
+            except Exception as e:
+                return {"status": "error", "message": str(e)}

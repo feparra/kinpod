@@ -12,11 +12,12 @@ Coordinates bidirectional binary streaming between:
 
 import io
 import os
+import time
 import json
 import wave
 import asyncio
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 import httpx
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
@@ -54,10 +55,18 @@ current_device_status = {
     "wifi_rssi": -52,
     "dimmed": False,
     "last_seen": None,
+    "last_user_speech": None,
 }
 
 # Pending approvals for Human-In-The-Loop
 pending_approvals: Dict[str, asyncio.Future] = {}
+
+# Pending listeners waiting for wearer voice input
+pending_speech_listeners: List[asyncio.Future] = []
+
+class ListenRequest(BaseModel):
+    timeout_sec: int = 30
+    allow_recent_sec: int = 5
 
 class ApprovalRequest(BaseModel):
     action_id: str
@@ -188,6 +197,45 @@ async def request_human_approval(req: ApprovalRequest):
         pending_approvals.pop(req.action_id, None)
         return {"action_id": req.action_id, "approved": False, "reason": "timeout"}
 
+@app.post("/api/listen")
+async def listen_for_speech(req: ListenRequest):
+    """
+    Blocks and waits for wearer to press Push-To-Talk on KinPod and speak.
+    If speech was captured in the last allow_recent_sec, returns it immediately.
+    """
+    now = time.time()
+    last = current_device_status.get("last_user_speech")
+    if last and (now - last.get("timestamp", 0) <= req.allow_recent_sec):
+        return {
+            "status": "heard",
+            "transcript": last.get("text", ""),
+            "timestamp": last.get("timestamp"),
+            "kin": last.get("kin", "crab")
+        }
+
+    loop = asyncio.get_running_loop()
+    fut = loop.create_future()
+    pending_speech_listeners.append(fut)
+    try:
+        res = await asyncio.wait_for(fut, timeout=float(req.timeout_sec))
+        return res
+    except asyncio.TimeoutError:
+        if fut in pending_speech_listeners:
+            pending_speech_listeners.remove(fut)
+        return {
+            "status": "timeout",
+            "transcript": None,
+            "message": f"No speech received from KinPod within {req.timeout_sec}s."
+        }
+
+@app.get("/api/speech/last")
+async def get_last_speech():
+    """Returns the most recent transcribed speech received from KinPod."""
+    last = current_device_status.get("last_user_speech")
+    if not last:
+        return {"status": "none", "transcript": None}
+    return {"status": "ok", **last}
+
 s_tunnel_url: Optional[str] = None
 s_tunnel_proc = None
 
@@ -296,6 +344,24 @@ async def kinpod_ws(ws: WebSocket):
 
                     wav = pcm16_to_wav(bytes(pcm_buf))
                     trans, reply, pcm16k = await process_kin_interaction(wav, kin_id)
+
+                    # Update last speech in telemetry
+                    current_device_status["last_user_speech"] = {
+                        "text": trans,
+                        "timestamp": time.time(),
+                        "kin": kin_id
+                    }
+
+                    # Resolve any active speech listeners (e.g. OpenClaw kinpod_listen tool)
+                    for fut in list(pending_speech_listeners):
+                        if not fut.done():
+                            fut.set_result({
+                                "status": "heard",
+                                "transcript": trans,
+                                "timestamp": time.time(),
+                                "kin": kin_id
+                            })
+                    pending_speech_listeners.clear()
 
                     await ws.send_text(json.dumps({
                         "event": "reply",

@@ -97,8 +97,8 @@ async def process_kin_interaction(wav_bytes: bytes, kin_id: str) -> tuple[str, s
         except Exception as e:
             logger.warning(f"Gemini native audio fallback: {e}")
 
-    # 2. Speech-To-Text fallback via OpenAI Whisper or simulated transcript
-    transcript = "Mensaje de voz desde KinPod"
+    # 2. Speech-To-Text fallback via OpenAI Whisper or Google Web Speech (Free)
+    transcript = ""
     if OPENAI_API_KEY:
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
@@ -109,17 +109,47 @@ async def process_kin_interaction(wav_bytes: bytes, kin_id: str) -> tuple[str, s
                     data={"model": "whisper-1", "language": "es"},
                 )
                 if stt.status_code == 200:
-                    transcript = stt.json().get("text", "").strip() or transcript
+                    transcript = stt.json().get("text", "").strip()
         except Exception as e:
             logger.warning(f"Whisper STT warn: {e}")
+
+    # Free Google STT fallback
+    if not transcript:
+        try:
+            import speech_recognition as sr
+            import io
+            recognizer = sr.Recognizer()
+            with sr.AudioFile(io.BytesIO(wav_bytes)) as source:
+                audio_data = recognizer.record(source)
+            try:
+                transcript = recognizer.recognize_google(audio_data, language="es-ES").strip()
+            except sr.UnknownValueError:
+                try:
+                    transcript = recognizer.recognize_google(audio_data, language="en-US").strip()
+                except Exception:
+                    pass
+            except Exception as e:
+                logger.warning(f"Google STT recognize warning: {e}")
+        except Exception as e:
+            logger.warning(f"SpeechRecognition fallback error: {e}")
+
+    if not transcript:
+        transcript = "Mensaje de voz desde KinPod"
 
     # 3. LLM Routing
     reply = ""
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             if provider == "openclaw":
-                r = await client.post(OPENCLAW_URL, json={"prompt": transcript, "kin": kin_id})
-                reply = r.json().get("reply", "OpenClaw conectado y listo.") if r.status_code == 200 else f"OpenClaw ({profile['name']}): Procesando requerimiento."
+                try:
+                    r = await client.post(OPENCLAW_URL, json={"prompt": transcript, "kin": kin_id})
+                    if r.status_code == 200:
+                        reply = r.json().get("reply", "OpenClaw conectado y listo.")
+                    else:
+                        reply = f"OpenClaw: Escuché '{transcript}'"
+                except Exception:
+                    # When OpenClaw runs as an MCP tool agent rather than HTTP webhook
+                    reply = f"OpenClaw escuchó: {transcript}"
             elif provider == "hermes":
                 r = await client.post(HERMES_URL, json={"prompt": transcript, "system": profile["prompt"]})
                 reply = r.json().get("reply", "Hermes sincronizado.") if r.status_code == 200 else "Hermes: Memoria y herramientas indexadas."

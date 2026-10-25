@@ -55,10 +55,12 @@ await kinpod_connect(agent_id="openclaw", avatar_id="crab", title="OpenClaw Engi
 
 | MCP Tool | Parameters | Description | Security Scope |
 | :--- | :--- | :--- | :--- |
-| `kinpod_status` | None | Returns battery voltage, Wi-Fi RSSI, link state, and active visual theme. | Read-only |
+| `kinpod_status` | None | Returns battery voltage, Wi-Fi RSSI, link state, active visual theme, and last voice input. | Read-only |
 | `kinpod_connect` | `agent_id`, `avatar_id`, `title` | Connects agent to the wearable, activating display badge & telemetry. | Display & telemetry |
 | `kinpod_pair` | `agent_id`, `avatar_id`, `title` | Alias for `kinpod_connect`. | Display & telemetry |
 | `kinpod_speak` | `text`, `voice` | Streams synthesized speech through the hardware chest speaker. | Audio output |
+| `kinpod_listen` | `timeout_sec` | **Audio Inbound:** Waits for wearer to press BOOT button, speak, and returns transcribed text. | Audio input |
+| `kinpod_get_last_speech` | None | Returns the most recent voice message spoken on the wearable without waiting. | Read-only |
 | `kinpod_request_approval` | `action`, `details`, `risk`, `timeout_sec` | **Human-In-The-Loop:** Displays modal on AMOLED chest screen; pauses agent execution until wearer taps Approve/Reject. | Security verification |
 | `kinpod_generate_pairing_code` | `relay_url` | Generates a 4-digit numeric PIN for zero-cable wearable pairing. | Ephemeral OTP |
 | `kinpod_expose_tunnel` | `port` | Spawns a secure Cloudflare tunnel for outdoor cellular hotspot roaming. | Tunnel registration |

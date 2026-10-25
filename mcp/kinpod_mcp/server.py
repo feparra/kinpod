@@ -214,17 +214,20 @@ async def kinpod_configure_wearable(
 async def kinpod_status() -> str:
     """
     Check the connection and telemetry status of the physical KinPod wearable.
-    Returns: Battery level, connection state, Wi-Fi signal, and active Kin avatar.
+    Returns: Battery level, connection state, Wi-Fi signal, active Kin avatar, and last spoken voice message.
     """
     status = await client.get_status()
     if not status.get("connected"):
         return f"KinPod Offline or KinBridge unreachable: {status.get('error', 'Device not connected')}"
+    last_speech = status.get("last_user_speech")
+    last_text = f"\nLast Voice Input: \"{last_speech.get('text')}\"" if last_speech and last_speech.get("text") else ""
     return (
         f"KinPod Online [OK]\n"
         f"Active Kin Avatar: {status.get('active_kin', 'astro')}\n"
         f"Battery: {status.get('battery_mv', 3950)} mV\n"
         f"Wi-Fi RSSI: {status.get('wifi_rssi', -50)} dBm\n"
         f"Display Dimmed: {status.get('dimmed', False)}"
+        f"{last_text}"
     )
 
 @mcp.tool()
@@ -300,6 +303,39 @@ async def kinpod_request_approval(action: str, details: str, risk: str = "HIGH",
     if res.get("approved"):
         return f"[APPROVAL GRANTED]: Human approved '{action}' via KinPod touch screen."
     return f"[APPROVAL REJECTED]: Action '{action}' was rejected or timed out (reason: {res.get('reason', 'user_rejected')})."
+
+@mcp.tool()
+async def kinpod_listen(timeout_sec: int = 30) -> str:
+    """
+    Listens for spoken voice input from the wearer via the KinPod chest microphone (ES7210).
+    Pauses and waits for the user to press the physical lateral BOOT button (GPIO 0),
+    speak into the microphone, and release.
+    Returns the transcribed text spoken by the wearer.
+
+    Parameters:
+    - timeout_sec: Maximum seconds to wait for user to speak (default 30s).
+    """
+    res = await client.listen(timeout_sec=timeout_sec)
+    status = res.get("status")
+    if status == "heard":
+        trans = res.get("transcript", "").strip()
+        if trans:
+            return f"[Wearer spoke on KinPod]: \"{trans}\""
+        return "[Wearer spoke on KinPod, but audio was silent or unclear]"
+    elif status == "timeout":
+        return f"[Timeout]: Wearer did not press Push-To-Talk within {timeout_sec} seconds."
+    return f"[Error listening]: {res.get('message', 'Unknown error')}"
+
+@mcp.tool()
+async def kinpod_get_last_speech() -> str:
+    """
+    Reads the most recent voice message spoken by the wearer on KinPod, without pausing or waiting.
+    Useful to check if the user just spoke or said something recently.
+    """
+    res = await client.get_last_speech()
+    if res.get("status") == "ok" and res.get("transcript"):
+        return f"[Last speech on KinPod]: \"{res.get('transcript')}\""
+    return "No recent voice messages recorded on KinPod."
 
 def main():
     """Runs the FastMCP server over standard I/O (stdio)."""
