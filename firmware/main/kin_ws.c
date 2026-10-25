@@ -142,7 +142,7 @@ esp_err_t kin_ws_send_ptt_start(const char *kin_id) {
 
 esp_err_t kin_ws_send_audio(const void *pcm_data, size_t len) {
     if (!kin_ws_is_connected() || !pcm_data || len == 0) return ESP_ERR_INVALID_STATE;
-    int sent = esp_websocket_client_send_bin(s_client, (const char *)pcm_data, len, pdMS_TO_TICKS(20));
+    int sent = esp_websocket_client_send_bin(s_client, (const char *)pcm_data, len, pdMS_TO_TICKS(250));
     return sent == (int)len ? ESP_OK : ESP_FAIL;
 }
 

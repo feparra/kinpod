@@ -39,10 +39,10 @@ async def main():
     print("3. Hablá claro frente al micrófono (ejemplo: 'Hola OpenClaw, confirmando audio').")
     print("4. SOLTÁ el botón para enviar.")
     print("-" * 70)
-    print("⏳ OpenClaw está esperando tu audio (Timeout: 35s)...")
+    print("⏳ OpenClaw está esperando tu audio (Timeout: 60s)...")
 
     start_time = time.time()
-    res = await client.listen(timeout_sec=35, allow_recent_sec=5)
+    res = await client.listen(timeout_sec=60, allow_recent_sec=5)
     elapsed = time.time() - start_time
 
     print("=" * 70)
