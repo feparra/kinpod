@@ -83,13 +83,13 @@ export function HeroSection({
 
           {/* Action Row - Mobile First Full Width Buttons */}
           <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
-            <button
-              onClick={onAcquire}
+            <a
+              href="/docs"
               className="group flex h-13 sm:h-14 w-full sm:w-auto items-center justify-center gap-3 rounded-[36px] bg-[#382416] px-6 sm:px-8 font-mono text-xs sm:text-sm font-semibold uppercase tracking-wider text-[#ffedd7] border border-[#40372e] hover:bg-[#523722] hover:border-[#dc5000]/60 transition-all active:scale-95 shadow-[0_0_30px_-5px_rgba(220,80,0,0.3)] cursor-pointer"
             >
-              <span>Acquire KinPod — $120</span>
+              <span>Explore Documentation</span>
               <ArrowRight className="h-4 w-4 text-[#dc5000] transition-transform group-hover:translate-x-1" />
-            </button>
+            </a>
 
             <button
               onClick={onCopyPrompt}

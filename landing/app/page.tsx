@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { KinPodLiveConsole } from "@/components/KinPodLiveConsole";
 import { SetupPromptDrawer } from "@/components/SetupPromptDrawer";
@@ -10,21 +9,14 @@ import { AnatomyTurntable } from "@/components/AnatomyTurntable";
 import { KinRoster } from "@/components/KinRoster";
 import { DeveloperBlueprint } from "@/components/DeveloperBlueprint";
 import { SpecsSection } from "@/components/SpecsSection";
-import { CheckoutSection } from "@/components/CheckoutSection";
+import { DocsCalloutSection } from "@/components/DocsCalloutSection";
 import { FooterManifesto } from "@/components/FooterManifesto";
 
 export default function Home() {
-  const scrollToAcquire = () => {
-    const el = document.getElementById("acquire");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#100904] text-[#ffedd7] flex flex-col font-sans selection:bg-[#dc5000] selection:text-white">
       {/* Top Sticky Navigation */}
-      <Navbar onAcquire={scrollToAcquire} />
+      <Navbar />
 
       {/* Main Experience Flow */}
       <main className="flex-1">
@@ -54,8 +46,8 @@ export default function Home() {
         {/* Section 8: Technical Engineering Specifications */}
         <SpecsSection />
 
-        {/* Section 9: Turnkey Founder Edition Acquisition ($120 USD) */}
-        <CheckoutSection />
+        {/* Section 9: Project Documentation Callout & Architecture Guide */}
+        <DocsCalloutSection />
       </main>
 
       {/* Open Source Manifesto & Repository Index */}
