@@ -23,6 +23,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENCLAW_URL = os.getenv("OPENCLAW_API_URL", "http://127.0.0.1:18789/v1/chat/completions")
 OPENCLAW_TOKEN = os.getenv("OPENCLAW_TOKEN", "")
+KIN_LANG = os.getenv("KIN_LANG", "en").lower()
 HERMES_URL = os.getenv("HERMES_API_URL", "http://127.0.0.1:8081/api/v1/chat")
 OLLAMA_URL = os.getenv("OLLAMA_API_URL", "http://127.0.0.1:11434/api/chat")
 OPENROUTER_KEY = os.getenv("OPENROUTER_API_KEY", "")
@@ -38,7 +39,7 @@ THE_KIN_ROSTER = {
     "crab": {
         "name": "OPENCLAW",
         "provider": "openclaw",
-        "voice": "onyx",
+        "voice": os.getenv("KIN_VOICE", "en-US-GuyNeural" if KIN_LANG.startswith("en") else "es-AR-TomasNeural"),
         "prompt": "You are OpenClaw inside KinPod. You are an autonomous agent capable of orchestrating actions.",
     },
     "hermes": {
@@ -103,11 +104,14 @@ async def process_kin_interaction(wav_bytes: bytes, kin_id: str) -> tuple[str, s
     if OPENAI_API_KEY:
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
+                whisper_data = {"model": "whisper-1"}
+                if not KIN_LANG.startswith("auto"):
+                    whisper_data["language"] = "en" if KIN_LANG.startswith("en") else "es"
                 stt = await client.post(
                     "https://api.openai.com/v1/audio/transcriptions",
                     headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
                     files={"file": ("audio.wav", wav_bytes, "audio/wav")},
-                    data={"model": "whisper-1", "language": "es"},
+                    data=whisper_data,
                 )
                 if stt.status_code == 200:
                     transcript = stt.json().get("text", "").strip()
@@ -122,11 +126,14 @@ async def process_kin_interaction(wav_bytes: bytes, kin_id: str) -> tuple[str, s
             recognizer = sr.Recognizer()
             with sr.AudioFile(io.BytesIO(wav_bytes)) as source:
                 audio_data = recognizer.record(source)
+
+            primary_lang = "en-US" if KIN_LANG.startswith("en") else "es-ES"
+            secondary_lang = "es-ES" if primary_lang == "en-US" else "en-US"
             try:
-                transcript = recognizer.recognize_google(audio_data, language="es-ES").strip()
+                transcript = recognizer.recognize_google(audio_data, language=primary_lang).strip()
             except sr.UnknownValueError:
                 try:
-                    transcript = recognizer.recognize_google(audio_data, language="en-US").strip()
+                    transcript = recognizer.recognize_google(audio_data, language=secondary_lang).strip()
                 except Exception:
                     pass
             except Exception as e:
@@ -135,7 +142,7 @@ async def process_kin_interaction(wav_bytes: bytes, kin_id: str) -> tuple[str, s
             logger.warning(f"SpeechRecognition fallback error: {e}")
 
     if not transcript:
-        transcript = "Mensaje de voz desde KinPod"
+        transcript = "Voice message from KinPod" if KIN_LANG.startswith("en") else "Mensaje de voz desde KinPod"
 
     # 3. LLM Routing
     reply = ""
@@ -157,13 +164,13 @@ async def process_kin_interaction(wav_bytes: bytes, kin_id: str) -> tuple[str, s
                         if "choices" in data and len(data["choices"]) > 0:
                             reply = data["choices"][0]["message"]["content"].strip()
                         else:
-                            reply = data.get("reply", "OpenClaw conectado y listo.")
+                            reply = data.get("reply", "OpenClaw connected and ready." if KIN_LANG.startswith("en") else "OpenClaw conectado y listo.")
                     else:
-                        logger.warning(f"OpenClaw returned HTTP {r.status_code}: {r.text}")
-                        reply = f"OpenClaw: Escuché '{transcript}'"
+                        logger.error(f"OpenClaw returned HTTP {r.status_code}: {r.text}")
+                        reply = f"OpenClaw gateway error: code {r.status_code}." if KIN_LANG.startswith("en") else f"Error en OpenClaw: código {r.status_code}."
                 except Exception as e:
-                    logger.warning(f"OpenClaw gateway connection failed: {e}")
-                    reply = f"OpenClaw escuchó: {transcript}"
+                    logger.error(f"OpenClaw gateway connection failed: {e}")
+                    reply = f"Could not connect to OpenClaw gateway on port 18789." if KIN_LANG.startswith("en") else "No pude conectar al gateway de OpenClaw."
             elif provider == "hermes":
                 r = await client.post(HERMES_URL, json={"prompt": transcript, "system": profile["prompt"]})
                 reply = r.json().get("reply", "Hermes sincronizado.") if r.status_code == 200 else "Hermes: Memoria y herramientas indexadas."
