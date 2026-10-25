@@ -21,7 +21,8 @@ logger = logging.getLogger("KinRouter")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENCLAW_URL = os.getenv("OPENCLAW_API_URL", "http://127.0.0.1:8080/api/v1/chat")
+OPENCLAW_URL = os.getenv("OPENCLAW_API_URL", "http://127.0.0.1:18789/v1/chat/completions")
+OPENCLAW_TOKEN = os.getenv("OPENCLAW_TOKEN", "")
 HERMES_URL = os.getenv("HERMES_API_URL", "http://127.0.0.1:8081/api/v1/chat")
 OLLAMA_URL = os.getenv("OLLAMA_API_URL", "http://127.0.0.1:11434/api/chat")
 OPENROUTER_KEY = os.getenv("OPENROUTER_API_KEY", "")
@@ -142,13 +143,26 @@ async def process_kin_interaction(wav_bytes: bytes, kin_id: str) -> tuple[str, s
         async with httpx.AsyncClient(timeout=30.0) as client:
             if provider == "openclaw":
                 try:
-                    r = await client.post(OPENCLAW_URL, json={"prompt": transcript, "kin": kin_id})
+                    headers = {"Content-Type": "application/json"}
+                    if OPENCLAW_TOKEN:
+                        headers["Authorization"] = f"Bearer {OPENCLAW_TOKEN}"
+                    payload = {
+                        "model": "openclaw/default",
+                        "user": "kinpod:fernando",
+                        "messages": [{"role": "user", "content": transcript}]
+                    }
+                    r = await client.post(OPENCLAW_URL, headers=headers, json=payload, timeout=30.0)
                     if r.status_code == 200:
-                        reply = r.json().get("reply", "OpenClaw conectado y listo.")
+                        data = r.json()
+                        if "choices" in data and len(data["choices"]) > 0:
+                            reply = data["choices"][0]["message"]["content"].strip()
+                        else:
+                            reply = data.get("reply", "OpenClaw conectado y listo.")
                     else:
+                        logger.warning(f"OpenClaw returned HTTP {r.status_code}: {r.text}")
                         reply = f"OpenClaw: Escuché '{transcript}'"
-                except Exception:
-                    # When OpenClaw runs as an MCP tool agent rather than HTTP webhook
+                except Exception as e:
+                    logger.warning(f"OpenClaw gateway connection failed: {e}")
                     reply = f"OpenClaw escuchó: {transcript}"
             elif provider == "hermes":
                 r = await client.post(HERMES_URL, json={"prompt": transcript, "system": profile["prompt"]})
